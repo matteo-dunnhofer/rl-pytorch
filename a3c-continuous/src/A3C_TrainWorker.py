@@ -17,7 +17,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import utils as ut
 from Logger import Logger
-from LunarLanderEnv import LunarLanderEnv
+from ContinuousEnv import LunarLanderEnv, BipedalWalkerEnv
 from ACModel import ActorCriticMLP
 
 
@@ -99,7 +99,7 @@ class A3C_TrainWorker(object):
 
         if self.cfg.DECAY_LR:
             lr_milestones = self.cfg.DECAY_LR_STEPS
-            self.lr_scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=lr_milestones, gamma=0.5)
+            self.lr_scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=lr_milestones, gamma=0.1)
 
 
 
@@ -107,7 +107,6 @@ class A3C_TrainWorker(object):
         """
         Worker training procedure
         """
-
         self.step = 0
         
         self.model_state = copy.deepcopy(self.local_model.init_state())
@@ -138,8 +137,6 @@ class A3C_TrainWorker(object):
             
             self.logger.log_value('loss', self.step, loss.item(), print_value=False, to_file=False)
 
-            if self.cfg.DECAY_LR:
-                self.lr_scheduler.step()
 
             if (self.step % self.cfg.SAVE_STEP) == 0 and (self.ident % 4 == 0): #self.name == 'a3c_train_worker_0':
                 torch.save(self.global_model.state_dict(), self.ckpt_path)
@@ -175,7 +172,7 @@ class A3C_TrainWorker(object):
                 with torch.cuda.device(self.gpu_id):
                     state = state.cuda()
 
-            policy_sigma, policy_mu, value, n_model_state = self.local_model(state, self.model_state, gpu_id=self.gpu_id)
+            policy_mu, policy_sigma, value, n_model_state = self.local_model(state, self.model_state, gpu_id=self.gpu_id)
 
             #mu = F.softsign(policy_mu)
             mu = torch.clamp(policy_mu, -1.0, 1.0)
@@ -204,6 +201,10 @@ class A3C_TrainWorker(object):
             self.model_state = n_model_state
 
             if self.env.done:
+
+                if self.cfg.DECAY_LR:
+                    self.lr_scheduler.step()
+
                 self.total_reward += self.env.total_reward
                 self.episode_count += 1
                 self.logger.log_episode(self.worker_name, self.episode_count, self.env.total_reward)

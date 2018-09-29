@@ -1,7 +1,7 @@
 """
-Written by Matteo Dunnhofer - 2017
+Written by Matteo Dunnhofer - 2018
 
-Class that defines the A3C Network
+Classes that defines the Actor Critc model
 """
 import random
 import os
@@ -23,7 +23,6 @@ class ActorCriticMLP(torch.nn.Module):
         self.training = training
 
         # network layers
-
         self.hidden1 = nn.Linear(8, 128)
         self.hidden2 = nn.Linear(128, 256)
         #self.hidden3 = nn.Linear(256, 256)
@@ -46,20 +45,14 @@ class ActorCriticMLP(torch.nn.Module):
         self.value.bias.data.fill_(0)
 
         """
-        if training:
-            self.train()
-        else:
-            self.eval()
 
     def forward(self, x, state, gpu_id=0):
-        """ Function that executes the model 
-
+        """ 
+        Function that executes the model 
         """
         x = F.relu(self.hidden1(x))
         x = F.relu(self.hidden2(x))
         #x = F.relu(self.hidden3(x))
-
-        #x = x.view(x.size(0), -1)
 
         return self.actor_mu(x), self.actor_sigma(x), self.critic(x), None
 

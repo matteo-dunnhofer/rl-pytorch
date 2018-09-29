@@ -24,8 +24,6 @@ from A3C_TrainWorker import A3C_TrainWorker
 
 
 class Trainer(object):
-	"""
-	"""
 
 	def __init__(self, cfg, resume):
 		self.cfg = cfg

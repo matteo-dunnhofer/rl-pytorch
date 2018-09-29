@@ -1,14 +1,12 @@
 """
 Written by Matteo Dunnhofer - 2018
 
-utility functions
+Utility functions
 """
 import math
 import numpy as np
 import torch
 from torch.autograd import Variable
-
-
 
 def ensure_shared_grads(local_model, global_model, use_gpu=False):
     for local_param, global_param in zip(filter(lambda p: p.requires_grad, local_model.parameters()),

@@ -1,5 +1,5 @@
 """
-Written by Matteo Dunnhofer - 2017
+Written by Matteo Dunnhofer - 2018
 
 Class that defines the procedure to make an agent play
 """
@@ -15,7 +15,7 @@ import gym
 import utils as ut
 from config import Configuration
 from ACModel import ActorCriticModel
-from LunarLanderEnv import LunarLanderEnv
+from ContinuousEnv import LunarLanderEnv, BipedalWalkerEnv
 
 class Player(object):
 
@@ -72,8 +72,8 @@ class Player(object):
 
 	def play_n(self, num_games):
 		"""
+		Play num_games games to evaluate average perfomances
 		"""
-
 		score, max_score, min_score = 0., 1e-10, 1e10
 
 		for game in range(num_games):
