@@ -33,7 +33,7 @@ class Configuration(object):
     DECAY_LR_STEPS = [500]
     OPTIM = 'adam'
     MOMENTUM = 0.95
-    MAX_EPISODES = 10000 
+    MAX_EPISODES = 1000
     GAMMA = 0.99
     STD_REWARDS = False
     
