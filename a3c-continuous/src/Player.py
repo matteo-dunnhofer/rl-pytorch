@@ -97,7 +97,7 @@ class Player(object):
                 #if self.cfg.RENDER:
                 self.env.render()
             
-                policy_mu, _, _, model_state = self.local_net(Variable(state.unsqueeze(0)), model_state)
+                policy_mu, _, _, model_state = self.model(Variable(state.unsqueeze(0)), model_state)
 
                 #mu = F.softsign(policy_mu)
                 mu = torch.clamp(policy_mu, -1.0, 1.0)
