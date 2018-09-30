@@ -17,9 +17,9 @@ class Configuration(object):
         - dataset path
         ...
     """
-    PROJECT_NAME = 'LunarLander'
+    PROJECT_NAME = 'A3C_continuous'
 
-    ENV = ''
+    ENV = 'LunarLanderEnv'
     DATA_PATH = ''
     EXPERIMENTS_PATH = '../experiments'
 
@@ -27,19 +27,21 @@ class Configuration(object):
     OBSERVATION_SIZE = [128, 128]
 
     SEED = 123
-    LEARNING_RATE = 1e-5
-    DECAY_LR = True
-    DECAY_LR_STEPS = [1500]
+    LEARNING_RATE = 1e-4
+    CRITIC_LR = 1e-3
+    DECAY_LR = False
+    DECAY_LR_STEPS = [500]
     OPTIM = 'adam'
     MOMENTUM = 0.95
     MAX_EPISODES = 10000 
     GAMMA = 0.99
     STD_REWARDS = False
     
-    USE_GAE = True # use Generalized Advantage Estimation
+    USE_GAE = False # use Generalized Advantage Estimation
     TAU = 1.0
 
-    ENTROPY_BETA = 1e-4
+    ENTROPY_BETA = 1e-2
+    VALUE_LOSS_MULT = 1.0
     
     ROLLOUT_STEPS = 20
     NUM_WORKERS = 8
@@ -60,6 +62,7 @@ class Configuration(object):
         cfg2str += "PROJECT_NAME = " + str(self.PROJECT_NAME) + '\n'
         cfg2str += "SEED = " + str(self.SEED) + '\n'
         cfg2str += "LEARNING_RATE = " + str(self.LEARNING_RATE) + '\n'
+        cfg2str += "CRITIC_LR = " + str(self.CRITIC_LR) + '\n'
         cfg2str += "DECAY_LR = " + str(self.DECAY_LR) + '\n'
         cfg2str += "DECAY_LR_STEPS = " + str(self.DECAY_LR_STEPS) + '\n'
         cfg2str += "OPTIM = " + str(self.OPTIM) + '\n'
@@ -71,6 +74,7 @@ class Configuration(object):
         cfg2str += "TAU = " + str(self.TAU) + '\n'
         cfg2str += "ROLLOUT_STEPS = " + str(self.ROLLOUT_STEPS) + '\n'
         cfg2str += "ENTROPY_BETA = " + str(self.ENTROPY_BETA) + '\n'
+        cfg2str += "VALUE_LOSS_MULT = " + str(self.VALUE_LOSS_MULT) + '\n'
         cfg2str += "STD_REWARDS = " + str(self.STD_REWARDS) + '\n'
         cfg2str += "NUM_WORKERS = " + str(self.NUM_WORKERS) + '\n'
         cfg2str += "DISPLAY_STEP = " + str(self.DISPLAY_STEP) + '\n'

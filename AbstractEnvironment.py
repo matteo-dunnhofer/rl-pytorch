@@ -8,12 +8,12 @@ from abc import ABCMeta, abstractmethod
 class AbstractEnvironment:
 	__metaclass__ = ABCMeta
 
-	@abstractmethod
-	def start(self):
-		"""
-		Starts the environment
-		"""
-		raise NotImplementedError()
+	#@abstractmethod
+	#def start(self):
+	#	"""
+	#	Starts the environment
+	#	"""
+	#	raise NotImplementedError()
 
 	@abstractmethod
 	def reset(self):

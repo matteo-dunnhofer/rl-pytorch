@@ -16,7 +16,7 @@ import torch.multiprocessing as mp
 import utils as ut
 from config import Configuration
 from Logger import Logger
-from ACModel import ActorCriticMLP
+from ACModel import ActorCriticMLP, ActorCriticLSTM
 from A3C_TrainWorker import A3C_TrainWorker
 #from A3C_TestWorker import A3C_TestWorker
 #from SharedAdam import SharedAdam
@@ -36,6 +36,7 @@ class Trainer(object):
 		self.main_logger = Logger(self.experiment_path, to_file=False)
 
 		self.global_model = ActorCriticMLP(self.cfg, training=True)
+		#self.global_model = ActorCriticLSTM(self.cfg, training=True)
 		self.global_model.share_memory()
 
 		#self.ckpt_path = os.path.join(self.cfg.CKPT_PATH, self.global_model.model_name + '_A3C_cont.weights')

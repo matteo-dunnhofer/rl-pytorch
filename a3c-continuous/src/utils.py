@@ -16,8 +16,7 @@ def ensure_shared_grads(local_model, global_model, use_gpu=False):
         elif not use_gpu:
             global_param._grad = local_param.grad
         else:
-            if local_param.grad is not None:
-                global_param._grad = local_param.grad.cpu()
+            global_param._grad = local_param.grad.cpu()
 
 def normalized_columns_initializer(weights, std=1.0):
     x = torch.randn(weights.size())
@@ -41,3 +40,15 @@ def weight_init(m):
         w_bound = np.sqrt(6. / (fan_in + fan_out))
         m.weight.data.uniform_(-w_bound, w_bound)
         m.bias.data.fill_(0)
+
+def normal(x, mu, sigma, gpu_id, use_gpu):
+    pi = torch.FloatTensor([math.pi])
+
+    if use_gpu:
+        with torch.cuda.device(gpu_id):
+            pi = pi.cuda()
+
+    a = (-1 * (x - mu).pow(2) / (2 * sigma)).exp()
+    b = 1 / (2 * sigma * pi.expand_as(sigma)).sqrt()
+
+    return a * b

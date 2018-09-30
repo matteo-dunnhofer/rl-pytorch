@@ -17,8 +17,8 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import utils as ut
 from Logger import Logger
-from ContinuousEnv import LunarLanderEnv, BipedalWalkerEnv
-from ACModel import ActorCriticMLP
+from ContinuousEnv import LunarLanderEnv, BipedalWalkerEnv, MountainCarEnv
+from ACModel import ActorCriticMLP, ActorCriticLSTM
 
 
 class A3C_TrainWorker(object):
@@ -33,6 +33,7 @@ class A3C_TrainWorker(object):
         self.make_folders()
 
         self.env = LunarLanderEnv(self.cfg)
+        #self.env = CartPoleEnv(self.cfg)
 
         torch.manual_seed(self.cfg.SEED + ident)
 
@@ -51,6 +52,7 @@ class A3C_TrainWorker(object):
         self.global_model = global_model
         
         self.local_model = ActorCriticMLP(self.cfg, training=True, gpu_id=self.gpu_id)
+        #self.local_model = ActorCriticLSTM(self.cfg, training=True, gpu_id=self.gpu_id)
         self.local_model.train()
 
         self.ckpt_path = os.path.join(experiment_path, 'ckpt', self.global_model.model_name + '.weights')
@@ -62,31 +64,23 @@ class A3C_TrainWorker(object):
             with torch.cuda.device(self.gpu_id):
                 self.local_model.cuda()
 
-        """
-        sl_params = list(list(self.global_net.model_sl.conv1.parameters()) + \
-                            list(self.global_net.model_sl.conv2.parameters()) + \
-                            list(self.global_net.model_sl.conv3.parameters()) + \
-                            list(self.global_net.model_sl.fc1.parameters()) )
+        
+        params = list(list(self.global_model.hidden1.parameters()) + \
+                            list(self.global_model.hidden2.parameters()) + \
+                            list(self.global_model.actor_mu.parameters()) + \
+                            list(self.global_model.actor_mu.parameters()) )
 
-        rl_params = list(list(self.global_net.model_sl.fc2.parameters()))
+        critic_params = list(list(self.global_model.critic.parameters()))
 
-        rl_params2 = list(list(self.global_net.policy_sigma.parameters()) + \
-                            list(self.global_net.model_sl.output.parameters()))
-
-        rl_params3 = list(list(self.global_net.value.parameters()))
-
-        parameters = [ {'params': sl_params},
-                       {'params': rl_params, 'lr': 1e-6},
-                       {'params': rl_params2, 'lr': 1e-5},
-                       {'params': rl_params3, 'lr': 1e-4}]
-        """
+        parameters = [ {'params': params},
+                       {'params': critic_params, 'lr': self.cfg.CRITIC_LR}]
+        
         
         #if optimizer is None:
         if self.cfg.OPTIM == 'adam':
-            self.optimizer = optim.Adam(filter(lambda p: p.requires_grad, self.global_model.parameters()),
-                                        lr=self.cfg.LEARNING_RATE)
-            #self.optimizer = optim.Adam(parameters,
+            #self.optimizer = optim.Adam(filter(lambda p: p.requires_grad, self.global_model.parameters()),
             #                            lr=self.cfg.LEARNING_RATE)
+            self.optimizer = optim.Adam(parameters, lr=self.cfg.LEARNING_RATE)
         elif self.cfg.OPTIM == 'rms-prop':
             self.optimizer = optim.RMSprop(filter(lambda p: p.requires_grad, self.global_model.parameters()),
                                         lr=self.cfg.LEARNING_RATE)
@@ -131,7 +125,7 @@ class A3C_TrainWorker(object):
             # update the global model weights
             self.local_model.zero_grad()
             loss.backward()
-            #torch.nn.utils.clip_grad_norm_(filter(lambda p: p.requires_grad, self.local_net.parameters()), 40.0)
+            torch.nn.utils.clip_grad_norm_(filter(lambda p: p.requires_grad, self.local_model.parameters()), 40.0)
             ut.ensure_shared_grads(self.local_model, self.global_model, use_gpu=self.cfg.USE_GPU)
             self.optimizer.step()
             
@@ -160,8 +154,8 @@ class A3C_TrainWorker(object):
 
             self.model_state = copy.deepcopy(self.local_model.init_state())
 
+        
         log_probs, rewards, values, entropies = [], [], [], []
-
 
         for _ in range(self.cfg.ROLLOUT_STEPS):
         #while not self.env.done:
@@ -172,26 +166,42 @@ class A3C_TrainWorker(object):
                 with torch.cuda.device(self.gpu_id):
                     state = state.cuda()
 
-            policy_mu, policy_sigma, value, n_model_state = self.local_model(state, self.model_state, gpu_id=self.gpu_id)
+            policy_mu, policy_sigma, value, n_model_state = self.local_model(state.unsqueeze(0), self.model_state, gpu_id=self.gpu_id)
 
             #mu = F.softsign(policy_mu)
             mu = torch.clamp(policy_mu, -1.0, 1.0)
-            #print(mu)
             #mu = F.tanh(policy_mu)
-            sigma = F.softplus(policy_sigma, beta=1.0) + np.finfo(np.float32).eps.item()
+            sigma = F.softplus(policy_sigma + np.finfo(np.float32).eps.item(), beta=1.0) 
             
-
+            """
+            # Does not work good # https://discuss.pytorch.org/t/backpropagation-through-sampling-a-normal-distribution/3164
             action_dist = torch.distributions.Normal(mu, sigma.sqrt())
-            action = action_dist.sample().data
+            action = action_dist.rsample().data
             action_log_prob = action_dist.log_prob(action)
             entropy = action_dist.entropy()
 
             action = torch.clamp(action, -1.0, 1.0)
-    
-            reward = self.env.step(action.cpu().numpy())
+            """
+            noise = torch.randn(mu.size())
+            pi = torch.FloatTensor([math.pi])
+
+            if self.cfg.USE_GPU:
+                with torch.cuda.device(self.gpu_id):
+                    noise = noise.cuda()
+                    pi = pi.cuda()
+
+            action = (mu + sigma.sqrt() * noise).data
+            action_prob = ut.normal(action, mu, sigma, self.gpu_id, self.cfg.USE_GPU)
+            action_log_prob = (action_prob + 1e-6).log()
+            entropy = 0.5 * ((sigma * 2 * pi.expand_as(sigma)).log() + 1)
+
+            action = torch.clamp(action, -1.0, 1.0)
+            
+            reward = self.env.step(action.cpu().numpy()[0])
 
             # reward clipping
             r = max(min(float(reward), 1.0), -1.0)
+            #r = reward
 
             log_probs.append(action_log_prob)
             rewards.append(r)
@@ -208,6 +218,7 @@ class A3C_TrainWorker(object):
                 self.total_reward += self.env.total_reward
                 self.episode_count += 1
                 self.logger.log_episode(self.worker_name, self.episode_count, self.env.total_reward)
+                
                 break
 
         if self.env.done:
@@ -223,7 +234,7 @@ class A3C_TrainWorker(object):
                 with torch.cuda.device(self.gpu_id):
                     state = state.cuda()
 
-            _, _, value, _ = self.local_model(state, self.model_state, gpu_id=self.gpu_id)
+            _, _, value, _ = self.local_model(state.unsqueeze(0), self.model_state, gpu_id=self.gpu_id)
 
             R = value.data
 
@@ -271,7 +282,7 @@ class A3C_TrainWorker(object):
         self.logger.log_value('policy_loss', self.step, policy_loss.item(), print_value=False, to_file=False)
         self.logger.log_value('value_loss', self.step, value_loss.item(), print_value=False, to_file=False)
 
-        return policy_loss + value_loss
+        return policy_loss + self.cfg.VALUE_LOSS_MULT * value_loss
 
     def make_folders(self):
         """

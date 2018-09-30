@@ -43,6 +43,9 @@ class Logger(object):
         if self.to_file:
             self.log_file.write(str(model) + '\n\n')
 
+        #if self.to_tensorboard:
+        #    self.tb_writer.add_graph(model)
+
     def log_loss(self, loss_type, step, value):
         """
         Logging loss data
@@ -58,7 +61,7 @@ class Logger(object):
 
     def log_value(self, value_type, step, value, print_value=True, to_file=True, to_tensorboard=True):
         """
-        Logging loss data
+        Logging generic data
         """
         log_str = '[{}] Step: {:08d} - {} {:.05f}'.format(dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), step, value_type, value)
         
@@ -74,7 +77,7 @@ class Logger(object):
 
     def log_episode(self, worker_name, episode, reward):
         """
-        Logging loss data
+        Logging episode data
         """
         log_str = '[{}] Worker: {} --- Episode: {:07d} - Reward {:05f}'.format(dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), worker_name, episode, reward)
         print(log_str)
@@ -87,7 +90,7 @@ class Logger(object):
 
     def log_test_episode(self, episode, reward):
         """
-        Logging loss data
+        Logging test episode data
         """
         log_str = '[{}] Test episode: {:05d}  - Reward {:05f}'.format(dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), episode, reward)
         print(log_str)
