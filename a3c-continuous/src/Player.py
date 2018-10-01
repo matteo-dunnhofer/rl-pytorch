@@ -31,6 +31,7 @@ class Player(object):
         self.model.eval()
 
         if self.cfg.USE_GPU:
+            self.gpu_id = self.cfg.GPU_IDS[0]
             with torch.cuda.device(self.gpu_id):
                 self.model.cuda()
 
@@ -62,13 +63,13 @@ class Player(object):
             #mu = F.softsign(policy_mu)
             mu = torch.clamp(policy_mu, -1.0, 1.0)
             #mu = torch.clamp(mu.data, -1.0, 1.0)
-            action = mu.data.numpy()[0]
+            action = mu.data.cpu().numpy()[0]
 
             _ = self.env.step(action)
             
 
-        print ('Final score: {:.01f}').format(self.env.total_reward)
-        print ('Steps: {:.01f}').format(self.env.steps)
+        print ('Final score: {:.01f}'.format(self.env.total_reward))
+        print ('Steps: {:.01f}'.format(self.env.steps))
 
     
 
@@ -102,7 +103,7 @@ class Player(object):
                 #mu = F.softsign(policy_mu)
                 mu = torch.clamp(policy_mu, -1.0, 1.0)
                 #mu = torch.clamp(mu.data, -1.0, 1.0)
-                action = mu.data.numpy()[0]
+                action = mu.data.cpu().numpy()[0]
 
                 _ = self.env.step(action)
                 
@@ -115,9 +116,9 @@ class Player(object):
             if self.env.total_reward < min_score:
                 min_score = self.env.total_reward
 
-        print ('Avg score: {:.03f}').format(score / num_games)
-        print ('Max score: {:.01f}').format(max_score)
-        print ('Min score: {:.01f}').format(min_score)
+        print ('Avg score: {:.03f}'.format(score / num_games))
+        print ('Max score: {:.01f}'.format(max_score))
+        print ('Min score: {:.01f}'.format(min_score))
 
 
 if __name__ == '__main__':
