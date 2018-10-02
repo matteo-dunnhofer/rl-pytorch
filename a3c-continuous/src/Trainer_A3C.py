@@ -25,7 +25,7 @@ from A3C_TrainWorker import A3C_TrainWorker
 
 class Trainer(object):
 
-	def __init__(self, cfg, resume):
+	def __init__(self, cfg, ckpt_path=None):
 		self.cfg = cfg
 
 		dt_now = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -39,16 +39,14 @@ class Trainer(object):
 		#self.global_model = ActorCriticLSTM(self.cfg, training=True)
 		self.global_model.share_memory()
 
-		#self.ckpt_path = os.path.join(self.cfg.CKPT_PATH, self.global_model.model_name + '_A3C_cont.weights')
-
 		torch.manual_seed(self.cfg.SEED)
 		torch.cuda.manual_seed(self.cfg.SEED)
 
 		self.optimizer = None #optim.Adam(self.global_model.parameters(), lr=self.cfg.LEARNING_RATE)
 		#self.optimizer.share_memory()
 		
-		if resume:
-			self.global_model.load_state_dict(torch.load(self.ckpt_path))
+		if ckpt_path is not None:
+			self.global_model.load_state_dict(torch.load(ckpt_path))
 
 
 	def train(self):
@@ -104,12 +102,12 @@ if __name__ == '__main__':
 	mp.set_start_method('spawn', force=True)
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--resume', help='Resume the training from the last checkpoint', action='store_true')
+	parser.add_argument('--ckpt', help='Resume the training from the given on the command line', type=str)
 	args = parser.parse_args()
 
 	cfg = Configuration()
 
-	trainer = Trainer(cfg, args.resume)
+	trainer = Trainer(cfg, ckpt_path=args.ckpt)
 	trainer.train()
 
 
