@@ -33,8 +33,8 @@ class A3C_TrainWorker(object):
         self.experiment_path = os.path.join(experiment_path, self.worker_name)
         self.make_folders()
 
-        #self.env = AtariEnv(self.cfg)
-        self.env = CartPoleEnv(self.cfg)
+        self.env = AtariEnv(self.cfg)
+        #self.env = CartPoleEnv(self.cfg)
 
         torch.manual_seed(self.cfg.SEED + ident)
 
@@ -52,7 +52,7 @@ class A3C_TrainWorker(object):
 
         self.global_model = global_model
         
-        self.local_model = ActorCriticLSTM2(self.cfg, training=True, gpu_id=self.gpu_id)
+        self.local_model = ActorCriticLSTM(self.cfg, training=True, gpu_id=self.gpu_id)
         self.local_model.train()
 
         self.ckpt_path = os.path.join(experiment_path, 'ckpt', self.global_model.model_name + '.weights')
@@ -65,6 +65,7 @@ class A3C_TrainWorker(object):
                 self.local_model.cuda()
 
         """
+        # defining per-layer learning rate
         params = list(list(self.global_model.hidden1.parameters()) + \
                             list(self.global_model.hidden2.parameters()) + \
                             list(self.global_model.actor_mu.parameters()) + \

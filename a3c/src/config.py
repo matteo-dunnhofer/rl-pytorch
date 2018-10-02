@@ -43,8 +43,8 @@ class Configuration(object):
     ENTROPY_BETA = 1e-2
     VALUE_LOSS_MULT = 1.0
     
-    ROLLOUT_STEPS = 20
-    NUM_WORKERS = 8
+    ROLLOUT_STEPS = 10
+    NUM_WORKERS = 4
     NUM_ACTIONS = 2
     
     USE_GPU = True

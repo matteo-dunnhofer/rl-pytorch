@@ -1,5 +1,5 @@
 """
-Written by Matteo Dunnhofer - 2017
+Written by Matteo Dunnhofer - 2018
 
 Data transformer class
 """

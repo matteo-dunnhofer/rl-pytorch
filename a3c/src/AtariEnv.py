@@ -71,5 +71,3 @@ class AtariEnv(AbstractEnvironment):
 	def render(self):
 		self.env.render()
 
-
-

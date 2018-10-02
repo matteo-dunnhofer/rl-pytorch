@@ -1,7 +1,7 @@
 """
 Written by Matteo Dunnhofer - 2018
 
-Class that defines the procedure to make an agent play
+Class that defines the procedure to make an agent play and evaluate its performances
 """
 import argparse
 import os

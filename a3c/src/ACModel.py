@@ -140,10 +140,6 @@ class ActorCriticLSTM2(torch.nn.Module):
        
         self.critic.weight.data = ut.normalized_columns_initializer(self.critic.weight.data, 1.0)
         self.critic.bias.data.fill_(0)
-        """
-        self.lstm.bias_ih.data.fill_(0)
-        self.lstm.bias_hh.data.fill_(0)
-        """
 
     def forward(self, x, state, gpu_id=0):
         """ Function that executes the model 
