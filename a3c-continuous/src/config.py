@@ -29,11 +29,11 @@ class Configuration(object):
     SEED = 123
     LEARNING_RATE = 1e-4
     CRITIC_LR = 1e-3
-    DECAY_LR = False
+    DECAY_LR = True
     DECAY_LR_STEPS = [500]
     OPTIM = 'adam'
     MOMENTUM = 0.95
-    MAX_EPISODES = 1000
+    MAX_EPISODES = 2000
     GAMMA = 0.99
     STD_REWARDS = False
     
@@ -44,10 +44,10 @@ class Configuration(object):
     VALUE_LOSS_MULT = 1.0
     
     ROLLOUT_STEPS = 20
-    NUM_WORKERS = 8
+    NUM_WORKERS = 16
     NUM_ACTIONS = 2
     
-    USE_GPU = False
+    USE_GPU = True
     GPU_IDS = [0] #[0, 1, 2]
 
 

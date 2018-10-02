@@ -107,7 +107,7 @@ class Player(object):
 
                 _ = self.env.step(action)
                 
-            print ('Game {:04d} - Final score: {:.01f}').format(game, self.env.total_reward)
+            print ('Game {:04d} - Final score: {:.01f}'.format(game, self.env.total_reward))
             score += self.env.total_reward
 
             if self.env.total_reward > max_score:

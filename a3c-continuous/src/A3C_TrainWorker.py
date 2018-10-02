@@ -139,7 +139,7 @@ class A3C_TrainWorker(object):
             if self.episode_count > self.cfg.MAX_EPISODES:
                 # terminate the training
                 if self.worker_name == 'a3c_train_worker_0':
-                    torch.save(self.global_net.state_dict(), self.ckpt_path)
+                    torch.save(self.global_model.state_dict(), self.ckpt_path)
                     print('Variables saved')
                 break
 
@@ -213,7 +213,7 @@ class A3C_TrainWorker(object):
             if self.env.done:
 
                 if self.cfg.DECAY_LR:
-                    self.lr_scheduler.step()
+                    self.lr_scheduler.step(self.episode_count)
 
                 self.total_reward += self.env.total_reward
                 self.episode_count += 1
