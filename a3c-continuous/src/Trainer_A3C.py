@@ -96,8 +96,9 @@ class Trainer(object):
 
 		
 if __name__ == '__main__':
-	#os.environ["OMP_NUM_THREADS"] = "8"
-	os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+	#os.environ["OMP_NUM_THREADS"] = "4"
+	#os.environ["KMP_AFFINITY"] = "scatter"
+	#os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 
 	mp.set_start_method('spawn', force=True)
 

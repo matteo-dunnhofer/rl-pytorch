@@ -44,7 +44,7 @@ class Configuration(object):
     VALUE_LOSS_MULT = 1.0
     
     ROLLOUT_STEPS = 20
-    NUM_WORKERS = 16
+    NUM_WORKERS = 8
     NUM_ACTIONS = 2
     
     USE_GPU = True
