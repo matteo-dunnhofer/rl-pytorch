@@ -24,10 +24,10 @@ class Player(object):
 
         self.cfg = cfg
         
-        #self.env = AtariEnv(self.cfg)
-        self.env = CartPoleEnv(self.cfg)
+        self.env = AtariEnv(self.cfg)
+        #self.env = CartPoleEnv(self.cfg)
 
-        self.model = ActorCriticLSTM2(self.cfg)
+        self.model = ActorCriticLSTM(self.cfg)
         self.model.eval()
 
         if self.cfg.USE_GPU:
@@ -56,11 +56,11 @@ class Player(object):
 
             self.env.render()
             
-            #time.sleep(0.1)
+            time.sleep(0.025)
         
             policy, _, model_state = self.model(Variable(state.unsqueeze(0)), model_state)
 
-            act = F.softmax(policy)
+            act = F.softmax(policy, dim=1)
             _, action = act.max(1)
 
             action = action.data.cpu().numpy()[0]
@@ -100,10 +100,10 @@ class Player(object):
             
                 policy, _, model_state = self.model(Variable(state.unsqueeze(0)), model_state)
 
-            	act = F.softmax(policy)
-            	_, action = act.max(1)
-            	
-            	action = action.data.cpu().numpy()[0]
+                act = F.softmax(policy, dim=1)
+                _, action = act.max(1)
+                
+                action = action.data.cpu().numpy()[0]
 
                 _ = self.env.step(action)
                 

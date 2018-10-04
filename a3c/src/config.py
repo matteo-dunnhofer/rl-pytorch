@@ -45,7 +45,7 @@ class Configuration(object):
     
     ROLLOUT_STEPS = 10
     NUM_WORKERS = 4
-    NUM_ACTIONS = 2
+    NUM_ACTIONS = 4
     
     USE_GPU = True
     GPU_IDS = [0] #[0, 1, 2]
