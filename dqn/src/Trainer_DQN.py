@@ -21,7 +21,7 @@ from config import Configuration
 from Logger import Logger
 from AtariEnv import AtariEnv
 from CartPoleEnv import CartPoleEnv
-from DQN import DQN
+from DQN import DQN, DQNMLP
 from ExperienceReplay import ExperienceReplay, Transition
 
 
@@ -41,8 +41,8 @@ class Trainer(object):
 
         self.logger = Logger(self.experiment_path, to_file=True, to_tensorboard=True)
 
-        self.env = AtariEnv(self.cfg)
-        #self.env = CartPoleEnv(self.cfg)
+        #self.env = AtariEnv(self.cfg)
+        self.env = CartPoleEnv(self.cfg)
 
         if self.cfg.USE_GPU:
             self.gpu_id = 0
@@ -50,10 +50,15 @@ class Trainer(object):
         else:
             self.device = torch.device('cpu')
 
-        self.target_model = DQN(self.cfg).to(self.device)
-        self.target_model.train()
-        self.model = DQN(self.cfg).to(self.device)
+        #self.target_model = DQN(self.cfg).to(self.device)
+        self.target_model = DQNMLP(self.cfg).to(self.device)
+        self.target_model.eval()
+        #self.model = DQN(self.cfg).to(self.device)
+        self.model = DQNMLP(self.cfg).to(self.device)
         self.model.train()
+
+        self.logger.log_config(self.cfg)
+        self.logger.log_pytorch_model(self.model)
 
         self.ckpt_path = os.path.join(self.experiment_path, 'ckpt', self.target_model.model_name + '.weights')
 
@@ -105,6 +110,8 @@ class Trainer(object):
                 if global_step > self.cfg.TRAIN_START:
                     epsilon = self.cfg.EPS_END + (self.cfg.EPS_START - self.cfg.EPS_END) * \
                                 math.exp(-1. * global_step / self.cfg.EPS_DECAY)
+
+                    self.logger.log_value('epsilon', global_step, epsilon, print_value=False, to_file=False)
             
                 if random.random() < epsilon:
                     # epsilon-greedy exploration
@@ -114,9 +121,7 @@ class Trainer(object):
                         q_pred = self.model(state.to(self.device))
                         
                         _, action = q_pred.max(1)
-                        action = action.view(1, 1)
-                    #action = q_pred.multinomial().data.cpu().numpy()
-                    #action = int(action)
+                        action = action.view(1, 1).cpu()
             
                 reward = self.env.step(action.item())
 
@@ -145,6 +150,7 @@ class Trainer(object):
                     state_batch = torch.cat(batch.state).to(self.device)
                     action_batch = torch.cat(batch.action).to(self.device)
                     reward_batch = torch.cat(batch.reward).to(self.device)
+                    
                     state_action_values = self.model(state_batch).gather(1, action_batch)
                     next_state_values = torch.zeros(self.cfg.BATCH_SIZE, device=self.device)
                     next_state_values[non_final_mask] = self.target_model(non_final_next_states.to(self.device)).max(1)[0].detach()
@@ -175,9 +181,9 @@ class Trainer(object):
                     #for i in range(self.cfg.BATCH_SIZE):
                     #   total_experience.update(b_i[i], errors[i])
 
-                # update target weights
-                if (global_step % self.cfg.TARGET_UPDATE) == 0:
-                    self.target_model.load_state_dict(self.model.state_dict())
+            # update target weights
+            if (e % self.cfg.TARGET_UPDATE) == 0:
+                self.target_model.load_state_dict(self.model.state_dict())
 
             #self.logger.log_value('reward', e, self.env.total_reward, print_value=True, to_file=True)
             self.logger.log_episode('DQN agent', e, self.env.total_reward)

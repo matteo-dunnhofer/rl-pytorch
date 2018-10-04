@@ -38,3 +38,31 @@ class DQN(nn.Module):
         
         return self.fc(x.view(x.size(0), -1))
 
+
+class DQNMLP(torch.nn.Module):
+
+    def __init__(self, cfg, training=False, gpu_id=0):
+        super(DQNMLP, self).__init__()
+
+        self.model_name = 'DQNMLP'
+
+        self.cfg = cfg
+        self.training = training
+
+        # network layers
+        self.hidden1 = nn.Linear(8, 128)
+        self.hidden2 = nn.Linear(128, 256)
+        #self.hidden3 = nn.Linear(256, 256)
+
+        # actor
+        self.output = nn.Linear(256, self.cfg.NUM_ACTIONS)
+
+    def forward(self, x, gpu_id=0):
+        """ 
+        Function that executes the model 
+        """
+        x = F.relu(self.hidden1(x))
+        x = F.relu(self.hidden2(x))
+        #x = F.relu(self.hidden3(x))
+
+        return self.output(x)

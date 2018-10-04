@@ -31,7 +31,7 @@ class AtariState(object):
 		for i in range(self.cfg.STATE_STACK_N):
 			state.append(frame)
 		
-		self.state = np.reshape(np.array(state), (self.cfg.OBSERVATION_SIZE[0], self.cfg.OBSERVATION_SIZE[1], self.cfg.STATE_STACK_N))
+		self.state = np.reshape(np.array(state), (self.cfg.OBSERVATION_SIZE[0], self.cfg.OBSERVATION_SIZE[1], self.cfg.ATARI_STATE_STACK_N))
 
 	
 	def add(self, next_frame):
