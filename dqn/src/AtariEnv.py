@@ -28,7 +28,7 @@ class AtariState(object):
 		frame = self.data_transformer.preprocess(init_frame, self.crop)
 
 		state = []
-		for i in range(self.cfg.STATE_STACK_N):
+		for i in range(self.cfg.ATARI_STATE_STACK_N):
 			state.append(frame)
 		
 		self.state = np.reshape(np.array(state), (self.cfg.OBSERVATION_SIZE[0], self.cfg.OBSERVATION_SIZE[1], self.cfg.ATARI_STATE_STACK_N))

@@ -62,6 +62,8 @@ class Trainer(object):
 
         self.ckpt_path = os.path.join(self.experiment_path, 'ckpt', self.target_model.model_name + '.weights')
 
+        self.criterion = torch.nn.MSELoss()
+
         
         if self.cfg.OPTIM == 'adam':
             self.optimizer = optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()),
@@ -92,13 +94,13 @@ class Trainer(object):
         drop_epsilon = (self.cfg.EPS_START - self.cfg.EPS_END) / self.cfg.EPS_DECAY
 
         global_step = 0
+        epsilon_step = 0
 
         for e in range(self.cfg.MAX_EPISODES):
     
             self.env.reset()
 
             state = self.env.get_state()
-            #state = state.to(self.device)
 
             while not self.env.done:
 
@@ -108,8 +110,10 @@ class Trainer(object):
                     self.env.render()
                 
                 if global_step > self.cfg.TRAIN_START:
+                    epsilon_step += 1
+
                     epsilon = self.cfg.EPS_END + (self.cfg.EPS_START - self.cfg.EPS_END) * \
-                                math.exp(-1. * global_step / self.cfg.EPS_DECAY)
+                                math.exp(-1. * epsilon_step / self.cfg.EPS_DECAY)
 
                     self.logger.log_value('epsilon', global_step, epsilon, print_value=False, to_file=False)
             
@@ -130,12 +134,13 @@ class Trainer(object):
 
                 if not self.env.done:
                     next_state = self.env.get_state()
-                    #next_state = next_state.to(self.device)
                 else:
                     next_state = None
 
                 experience_replay.push(state, action, next_state, r)
                 #total_experience.add(total_experience.get_max(), (w_state, action, r, next_w_state, done))
+
+                state = next_state
 
                 if global_step > self.cfg.TRAIN_START and len(experience_replay) > self.cfg.BATCH_SIZE:
 
@@ -153,21 +158,20 @@ class Trainer(object):
                     
                     state_action_values = self.model(state_batch).gather(1, action_batch)
                     next_state_values = torch.zeros(self.cfg.BATCH_SIZE, device=self.device)
-                    next_state_values[non_final_mask] = self.target_model(non_final_next_states.to(self.device)).max(1)[0].detach()
+
+                    if self.cfg.DOUBLE_DQN:
+                        _, next_state_actions = self.model(non_final_next_states.to(self.device)).max(1, keepdim=True)
+
+                        next_state_values[non_final_mask] = self.target_model(non_final_next_states.to(self.device)).gather(1, next_state_actions).squeeze(1).detach()
+                    else:
+                        next_state_values[non_final_mask] = self.target_model(non_final_next_states.to(self.device)).max(1)[0].detach()
 
                     expected_state_action_values = (next_state_values * self.cfg.GAMMA) + reward_batch
-                    # double dqn
-                    """
-                    if True:
-                        q1_pred_n = self.train_dqn(next_state_batch)
-                        _, q1_action = torch.max(q1_pred_n, 1)
 
-                        q2_pred[not_done_mask] = self.target_dqn(next_state_batch).gather(1, q1_action.unsqueeze(1)).squeeze(1)
+                    if self.cfg.HUBER_LOSS:
+                        loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
                     else:
-                        q2_pred[not_done_mask] = self.target_dqn(next_state_batch).max(1)[0]
-                    """
-
-                    loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
+                        loss = F.mse_loss(state_action_values, expected_state_action_values.unsqueeze(1))
 
                     # training op
                     self.optimizer.zero_grad()
@@ -181,21 +185,17 @@ class Trainer(object):
                     #for i in range(self.cfg.BATCH_SIZE):
                     #   total_experience.update(b_i[i], errors[i])
 
-            # update target weights
-            if (e % self.cfg.TARGET_UPDATE) == 0:
-                self.target_model.load_state_dict(self.model.state_dict())
+                # update target weights
+                if (global_step % self.cfg.TARGET_UPDATE) == 0:
+                    self.target_model.load_state_dict(self.model.state_dict())
 
-            #self.logger.log_value('reward', e, self.env.total_reward, print_value=True, to_file=True)
             self.logger.log_episode('DQN agent', e, self.env.total_reward)
 
             
             if (e % self.cfg.SAVE_STEP) == 0:
                 torch.save(self.target_model.state_dict(), self.ckpt_path)
                 self.logger.log_variables()
-                """
-                errors = np.abs(t - target_q)
-                total_experience.add(errors[0], (w_state, action, r, next_w_state, done))
-                """
+
         torch.save(self.target_model.state_dict(), self.ckpt_path)
         self.logger.log_variables()
         

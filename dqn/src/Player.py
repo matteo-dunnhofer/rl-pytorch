@@ -14,7 +14,7 @@ from torch.autograd import Variable
 import gym
 import utils as ut
 from config import Configuration
-from ACModel import ActorCriticLSTM,  ActorCriticLSTM2
+from DQN import DQN, DQNMLP
 from AtariEnv import AtariEnv
 from CartPoleEnv import CartPoleEnv
 
@@ -27,47 +27,39 @@ class Player(object):
         #self.env = AtariEnv(self.cfg)
         self.env = CartPoleEnv(self.cfg)
 
-        self.model = ActorCriticLSTM2(self.cfg)
-        self.model.eval()
-
         if self.cfg.USE_GPU:
-            self.gpu_id = self.cfg.GPU_IDS[0]
-            with torch.cuda.device(self.gpu_id):
-                self.model.cuda()
+            self.gpu_id = 0
+            self.device = torch.device('cuda', self.gpu_id)
+        else:
+            self.device = torch.device('cpu')
+
+        self.model = DQNMLP(self.cfg).to(self.device)
+        self.model.eval()
 
         self.model.load_state_dict(torch.load(ckpt_path))
         
 
-
     def play(self):
 
         step = 0
-
-        model_state = copy.deepcopy(self.model.init_state())
 
         while not self.env.done:
             step += 1
 
             state = self.env.get_state()
 
-            if self.cfg.USE_GPU:
-                with torch.cuda.device(self.gpu_id):
-                    state = state.cuda()
+            state = state.to(self.device)
 
             self.env.render()
             
-            #time.sleep(0.1)
+            time.sleep(0.05)
         
-            policy, _, model_state = self.model(Variable(state.unsqueeze(0)), model_state)
+            q_values = self.model(state)
+            _, action = q_values.max(1)
+            action = action.view(1, 1).cpu()
 
-            act = F.softmax(policy)
-            _, action = act.max(1)
-
-            action = action.data.cpu().numpy()[0]
-
-            _ = self.env.step(action)
+            _ = self.env.step(action.item())
             
-
         print ('Final score: {:.01f}'.format(self.env.total_reward))
         print ('Steps: {:.01f}'.format(self.env.steps))
 
@@ -84,28 +76,23 @@ class Player(object):
 
             self.env.reset()
 
-            model_state = copy.deepcopy(self.model.init_state())
-
             while not self.env.done:
                 step += 1
 
                 state = self.env.get_state()
 
-                if self.cfg.USE_GPU:
-                    with torch.cuda.device(self.gpu_id):
-                        state = state.cuda()
+                state = state.to(self.device)
 
-                #if self.cfg.RENDER:
                 self.env.render()
+                
+                time.sleep(0.05)
             
-                policy, _, model_state = self.model(Variable(state.unsqueeze(0)), model_state)
+                q_values = self.model(state)
+                _, action = q_values.max(1)
+                action = action.view(1, 1).cpu()
 
-            	act = F.softmax(policy)
-            	_, action = act.max(1)
-            	
-            	action = action.data.cpu().numpy()[0]
-
-                _ = self.env.step(action)
+                _ = self.env.step(action.item())
+            
                 
             print ('Game {:04d} - Final score: {:.01f}'.format(game, self.env.total_reward))
             score += self.env.total_reward

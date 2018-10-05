@@ -19,14 +19,15 @@ class Configuration(object):
     """
     PROJECT_NAME = 'DQN'
 
-    ENV = 'CartPole' #PongDeterministic-v4'
+    ENV = 'PongDeterministic-v4'
     EXPERIMENTS_PATH = '../experiments'
 
     # training hyperparameters
     OBSERVATION_SIZE = [80, 80]
 
     SEED = 123
-    LEARNING_RATE = 1e-5
+    HUBER_LOSS = False  # choose touse Huber or MSE loss
+    LEARNING_RATE = 1e-3 #0.00025 #1e-5
     BATCH_SIZE = 32
     DECAY_LR = False
     DECAY_LR_STEPS = [500]
@@ -35,15 +36,16 @@ class Configuration(object):
     MAX_EPISODES = 100000
     GAMMA = 0.999
     
-    EPS_START = 0.9 #0.9
-    EPS_END = 0.05 #0.1
-    EPS_DECAY = 10000 #5e5
-    TARGET_UPDATE = 100
+    EPS_START = 0.9
+    EPS_END = 0.1
+    EPS_DECAY = 100000 #1000000 #5e5
+    TARGET_UPDATE = 1000
     EXPERIENCE_REPLAY_SIZE = 10000
     TRAIN_START = 1000
     ATARI_STATE_STACK_N = 4
+    DOUBLE_DQN = False
 
-    NUM_ACTIONS = 2 #4
+    NUM_ACTIONS = 2
     
     USE_GPU = True
     GPU_IDS = [0] #[0, 1, 2]

@@ -20,7 +20,7 @@ class DQN(nn.Module):
         self.cfg = cfg
         self.model_name = 'DQN'
 
-        self.conv1 = nn.Conv2d(self.cfg.STATE_STACK_N, 16, kernel_size=5, stride=2)
+        self.conv1 = nn.Conv2d(self.cfg.ATARI_STATE_STACK_N, 16, kernel_size=5, stride=2)
         self.bn1 = nn.BatchNorm2d(16)
         
         self.conv2 = nn.Conv2d(16, 32, kernel_size=5, stride=2)
