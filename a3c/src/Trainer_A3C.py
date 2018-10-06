@@ -28,6 +28,9 @@ class Trainer(object):
 	def __init__(self, cfg, ckpt_path=None):
 		self.cfg = cfg
 
+		torch.manual_seed(self.cfg.SEED)
+		torch.cuda.manual_seed(self.cfg.SEED)
+
 		dt_now = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 		self.experiment_name = self.cfg.PROJECT_NAME + '_' + dt_now
 		self.experiment_path = os.path.join(self.cfg.EXPERIMENTS_PATH, self.experiment_name)
@@ -37,9 +40,6 @@ class Trainer(object):
 
 		self.global_model = ActorCriticLSTM(self.cfg, training=True)
 		self.global_model.share_memory()
-
-		torch.manual_seed(self.cfg.SEED)
-		torch.cuda.manual_seed(self.cfg.SEED)
 
 		self.optimizer = None #optim.Adam(self.global_model.parameters(), lr=self.cfg.LEARNING_RATE)
 		#self.optimizer.share_memory()

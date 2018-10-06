@@ -64,7 +64,7 @@ class ActorCriticLSTM(torch.nn.Module):
         self.lstm.bias_hh.data.fill_(0)
         """
 
-    def forward(self, x, state, gpu_id=0):
+    def forward(self, x, state, device):
         """ 
         Function that executes the model 
         """
@@ -80,30 +80,19 @@ class ActorCriticLSTM(torch.nn.Module):
         #h_state, c_state = self.lstm(x, state)
 
         #x = h_state
-
-        if self.cfg.USE_GPU:
-            with torch.cuda.device(gpu_id):
-                state = (Variable(state[0].data.cuda()), Variable(state[1].data.cuda()))
-        else:
-            state = (Variable(state[0].data), Variable(state[1].data))
-
+        state = (state[0].data.to(device), state[1].data.to(device))
 
         x, n_state = self.lstm(x.unsqueeze(0), state)
         x = x.squeeze(0)
 
         return self.actor(x), self.critic(x), n_state #(h_state, c_state)
 
-    def init_state(self):
+    def init_state(self, device):
         """
         Returns the initial state of the model
         """
-        if self.cfg.USE_GPU:
-            with torch.cuda.device(self.gpu_id):
-                return (Variable(torch.zeros(self.lstm_layers, 1, self.lstm_size).cuda()),
-                                   Variable(torch.zeros(self.lstm_layers, 1, self.lstm_size).cuda()))
-        else:
-            return (Variable(torch.zeros(self.lstm_layers, 1, self.lstm_size)),
-                               Variable(torch.zeros(self.lstm_layers, 1, self.lstm_size)))
+        return (torch.zeros(self.lstm_layers, 1, self.lstm_size).to(device),
+                torch.zeros(self.lstm_layers, 1, self.lstm_size).to(device))
 
 class ActorCriticLSTM2(torch.nn.Module):
 
@@ -141,7 +130,7 @@ class ActorCriticLSTM2(torch.nn.Module):
         self.critic.weight.data = ut.normalized_columns_initializer(self.critic.weight.data, 1.0)
         self.critic.bias.data.fill_(0)
 
-    def forward(self, x, state, gpu_id=0):
+    def forward(self, x, state, device):
         """ Function that executes the model 
 
         """
@@ -156,28 +145,17 @@ class ActorCriticLSTM2(torch.nn.Module):
         #h_state, c_state = self.lstm(x, state)
 
         #x = h_state
-
-        if self.cfg.USE_GPU:
-            with torch.cuda.device(gpu_id):
-                state = (Variable(state[0].data.cuda()), Variable(state[1].data.cuda()))
-        else:
-            state = (Variable(state[0].data), Variable(state[1].data))
-
+        state = (state[0].data.to(device), state[1].data.to(device))
 
         x, n_state = self.lstm(x.unsqueeze(0), state)
         x = x.squeeze(0)
 
         return self.actor(x), self.critic(x), n_state #(h_state, c_state)
 
-    def init_state(self):
+    def init_state(self, device):
         """
         Returns the initial state of the model
         """
-        if self.cfg.USE_GPU:
-            with torch.cuda.device(self.gpu_id):
-                return (Variable(torch.zeros(self.lstm_layers, 1, self.lstm_size).cuda()),
-                                   Variable(torch.zeros(self.lstm_layers, 1, self.lstm_size).cuda()))
-        else:
-            return (Variable(torch.zeros(self.lstm_layers, 1, self.lstm_size)),
-                               Variable(torch.zeros(self.lstm_layers, 1, self.lstm_size)))
+        return (torch.zeros(self.lstm_layers, 1, self.lstm_size).to(device),
+                torch.zeros(self.lstm_layers, 1, self.lstm_size).to(device))
 

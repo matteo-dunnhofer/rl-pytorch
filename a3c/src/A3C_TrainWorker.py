@@ -41,8 +41,10 @@ class A3C_TrainWorker(object):
         if self.cfg.USE_GPU:
             self.gpu_id = self.cfg.GPU_IDS[ident % len(self.cfg.GPU_IDS)]
             torch.cuda.manual_seed(self.cfg.SEED + ident)
+            self.device = torch.device('cuda', self.gpu_id)
         else:
             self.gpu_id = 0
+            self.device = torch.device('cpu')
 
         self.logger = Logger(self.experiment_path, to_file=True, to_tensorboard=True)
 
@@ -52,7 +54,7 @@ class A3C_TrainWorker(object):
 
         self.global_model = global_model
         
-        self.local_model = ActorCriticLSTM(self.cfg, training=True, gpu_id=self.gpu_id)
+        self.local_model = ActorCriticLSTM(self.cfg, training=True).to(self.device)
         self.local_model.train()
 
         self.ckpt_path = os.path.join(experiment_path, 'ckpt', self.global_model.model_name + '.weights')
@@ -60,9 +62,6 @@ class A3C_TrainWorker(object):
         self.logger.log_config(self.cfg, print_log=False)
         self.logger.log_pytorch_model(self.global_model, print_log=False)
 
-        if self.cfg.USE_GPU:
-            with torch.cuda.device(self.gpu_id):
-                self.local_model.cuda()
 
         """
         # defining per-layer learning rate
@@ -104,7 +103,7 @@ class A3C_TrainWorker(object):
         """
         self.step = 0
         
-        self.model_state = copy.deepcopy(self.local_model.init_state())
+        self.model_state = copy.deepcopy(self.local_model.init_state(self.device))
 
         while True:
             
@@ -153,7 +152,7 @@ class A3C_TrainWorker(object):
         if self.env.done:
             self.env.reset()
 
-            self.model_state = copy.deepcopy(self.local_model.init_state())
+            self.model_state = copy.deepcopy(self.local_model.init_state(self.device))
 
         
         log_probs, rewards, values, entropies = [], [], [], []
@@ -163,11 +162,9 @@ class A3C_TrainWorker(object):
 
             state = self.env.get_state()
 
-            if self.cfg.USE_GPU:
-                with torch.cuda.device(self.gpu_id):
-                    state = state.cuda()
+            state = state.to(self.device)
 
-            policy, value, n_model_state = self.local_model(state.unsqueeze(0), self.model_state, gpu_id=self.gpu_id)
+            policy, value, n_model_state = self.local_model(state.unsqueeze(0), self.model_state, self.device)
 
             action_prob = F.softmax(policy, dim=1)
             action_log_prob = F.log_softmax(policy, dim=1)
@@ -201,19 +198,13 @@ class A3C_TrainWorker(object):
                 break
 
         if self.env.done:
-            R = torch.zeros(1, 1)
-
-            if self.cfg.USE_GPU:
-                with torch.cuda.device(self.gpu_id):
-                    R = R.cuda()
+            R = torch.zeros(1, 1).to(self.device)
         else:
             state = self.env.get_state()
 
-            if self.cfg.USE_GPU:
-                with torch.cuda.device(self.gpu_id):
-                    state = state.cuda()
+            state = state.to(self.device)
 
-            _, value, _ = self.local_model(state.unsqueeze(0), self.model_state, gpu_id=self.gpu_id)
+            _, value, _ = self.local_model(state.unsqueeze(0), self.model_state, self.device)
 
             R = value.data
 
@@ -226,18 +217,12 @@ class A3C_TrainWorker(object):
 
         # reward standardization
         if self.cfg.STD_REWARDS and len(rewards) > 1:
-            rewards = torch.Tensor(rewards)
-            if self.cfg.USE_GPU:
-                with torch.cuda.device(self.gpu_id):
-                    rewards = rewards.cuda()
+            rewards = torch.Tensor(rewards).to(self.device)
 
             rewards = (rewards - rewards.mean()) / (rewards.std() + np.finfo(np.float32).eps.item())
 
         if self.cfg.USE_GAE:
-            gae = torch.zeros(1, 1)
-            if self.cfg.USE_GPU:
-                with torch.cuda.device(self.gpu_id):
-                    gae = gae.cuda()
+            gae = torch.zeros(1, 1).to(self.device)
 
         for i in reversed(range(len(rewards))):
             R = self.cfg.GAMMA * R + rewards[i]

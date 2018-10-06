@@ -43,7 +43,7 @@ class Configuration(object):
     EXPERIENCE_REPLAY_SIZE = 10000
     TRAIN_START = 0
     ATARI_STATE_STACK_N = 4
-    DOUBLE_DQN = False
+    DOUBLE_DQN = True
 
     NUM_ACTIONS = 2
     

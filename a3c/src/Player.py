@@ -27,13 +27,15 @@ class Player(object):
         self.env = AtariEnv(self.cfg)
         #self.env = CartPoleEnv(self.cfg)
 
-        self.model = ActorCriticLSTM(self.cfg)
-        self.model.eval()
-
         if self.cfg.USE_GPU:
-            self.gpu_id = self.cfg.GPU_IDS[0]
-            with torch.cuda.device(self.gpu_id):
-                self.model.cuda()
+            self.gpu_id = 0
+            self.device = torch.device('cuda', self.gpu_id)
+        else:
+            self.device = torch.device('cpu')
+
+
+        self.model = ActorCriticLSTM(self.cfg).to(self.device)
+        self.model.eval()
 
         self.model.load_state_dict(torch.load(ckpt_path))
         
@@ -50,15 +52,13 @@ class Player(object):
 
             state = self.env.get_state()
 
-            if self.cfg.USE_GPU:
-                with torch.cuda.device(self.gpu_id):
-                    state = state.cuda()
+            state = state.to(self.device)
 
             self.env.render()
             
             time.sleep(0.025)
         
-            policy, _, model_state = self.model(Variable(state.unsqueeze(0)), model_state)
+            policy, _, model_state = self.model(state.unsqueeze(0), model_state)
 
             act = F.softmax(policy, dim=1)
             _, action = act.max(1)
@@ -91,14 +91,12 @@ class Player(object):
 
                 state = self.env.get_state()
 
-                if self.cfg.USE_GPU:
-                    with torch.cuda.device(self.gpu_id):
-                        state = state.cuda()
+                state = state.to(self.device)
 
                 #if self.cfg.RENDER:
                 self.env.render()
             
-                policy, _, model_state = self.model(Variable(state.unsqueeze(0)), model_state)
+                policy, _, model_state = self.model(state.unsqueeze(0), model_state)
 
                 act = F.softmax(policy, dim=1)
                 _, action = act.max(1)
