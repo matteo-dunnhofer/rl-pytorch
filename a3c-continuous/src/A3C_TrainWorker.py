@@ -40,8 +40,10 @@ class A3C_TrainWorker(object):
         if self.cfg.USE_GPU:
             self.gpu_id = self.cfg.GPU_IDS[ident % len(self.cfg.GPU_IDS)]
             torch.cuda.manual_seed(self.cfg.SEED + ident)
+            self.device = torch.device('cuda', self.gpu_id)
         else:
             self.gpu_id = 0
+            self.device = torch.device('cpu')
 
         self.logger = Logger(self.experiment_path, to_file=True, to_tensorboard=True)
 
@@ -51,7 +53,7 @@ class A3C_TrainWorker(object):
 
         self.global_model = global_model
         
-        self.local_model = ActorCriticMLP(self.cfg, training=True, gpu_id=self.gpu_id)
+        self.local_model = ActorCriticMLP(self.cfg, training=True).to(self.device)
         #self.local_model = ActorCriticLSTM(self.cfg, training=True, gpu_id=self.gpu_id)
         self.local_model.train()
 
@@ -60,11 +62,6 @@ class A3C_TrainWorker(object):
         self.logger.log_config(self.cfg, print_log=False)
         self.logger.log_pytorch_model(self.global_model, print_log=False)
 
-        if self.cfg.USE_GPU:
-            with torch.cuda.device(self.gpu_id):
-                self.local_model.cuda()
-
-        
         params = list(list(self.global_model.hidden1.parameters()) + \
                             list(self.global_model.hidden2.parameters()) + \
                             list(self.global_model.actor_mu.parameters()) + \
@@ -90,7 +87,6 @@ class A3C_TrainWorker(object):
             self.optimizer = optim.SGD(filter(lambda p: p.requires_grad, self.global_model.parameters()),
                                         lr=self.cfg.LEARNING_RATE)
 
-
         if self.cfg.DECAY_LR:
             lr_milestones = self.cfg.DECAY_LR_STEPS
             self.lr_scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=lr_milestones, gamma=0.1)
@@ -103,7 +99,7 @@ class A3C_TrainWorker(object):
         """
         self.step = 0
         
-        self.model_state = copy.deepcopy(self.local_model.init_state())
+        self.model_state = copy.deepcopy(self.local_model.init_state(self.device))
 
         while True:
             
@@ -152,7 +148,7 @@ class A3C_TrainWorker(object):
         if self.env.done:
             self.env.reset()
 
-            self.model_state = copy.deepcopy(self.local_model.init_state())
+            self.model_state = copy.deepcopy(self.local_model.init_state(self.device))
 
         
         log_probs, rewards, values, entropies = [], [], [], []
@@ -162,11 +158,9 @@ class A3C_TrainWorker(object):
 
             state = self.env.get_state()
 
-            if self.cfg.USE_GPU:
-                with torch.cuda.device(self.gpu_id):
-                    state = state.cuda()
+            state = state.to(self.device)
 
-            policy_mu, policy_sigma, value, n_model_state = self.local_model(state.unsqueeze(0), self.model_state, gpu_id=self.gpu_id)
+            policy_mu, policy_sigma, value, n_model_state = self.local_model(state.unsqueeze(0), self.model_state, self.device)
 
             #mu = F.softsign(policy_mu)
             mu = torch.clamp(policy_mu, -1.0, 1.0)
@@ -182,16 +176,11 @@ class A3C_TrainWorker(object):
 
             action = torch.clamp(action, -1.0, 1.0)
             """
-            noise = torch.randn(mu.size())
-            pi = torch.FloatTensor([math.pi])
-
-            if self.cfg.USE_GPU:
-                with torch.cuda.device(self.gpu_id):
-                    noise = noise.cuda()
-                    pi = pi.cuda()
+            noise = torch.randn(mu.size()).to(self.device)
+            pi = torch.FloatTensor([math.pi]).to(self.device)
 
             action = (mu + sigma.sqrt() * noise).data
-            action_prob = ut.normal(action, mu, sigma, self.gpu_id, self.cfg.USE_GPU)
+            action_prob = ut.normal(action, mu, sigma, self.device)
             action_log_prob = (action_prob + 1e-6).log()
             entropy = 0.5 * ((sigma * 2 * pi.expand_as(sigma)).log() + 1)
 
@@ -222,23 +211,16 @@ class A3C_TrainWorker(object):
                 break
 
         if self.env.done:
-            R = torch.zeros(1, 1)
-
-            if self.cfg.USE_GPU:
-                with torch.cuda.device(self.gpu_id):
-                    R = R.cuda()
+            R = torch.zeros(1, 1).to(self.device)
         else:
             state = self.env.get_state()
 
-            if self.cfg.USE_GPU:
-                with torch.cuda.device(self.gpu_id):
-                    state = state.cuda()
+            state = state.to(self.device)
 
-            _, _, value, _ = self.local_model(state.unsqueeze(0), self.model_state, gpu_id=self.gpu_id)
+            _, _, value, _ = self.local_model(state.unsqueeze(0), self.model_state, self.device)
 
             R = value.data
 
-        R = Variable(R)
         values.append(R)
 
         # computing loss
@@ -247,18 +229,12 @@ class A3C_TrainWorker(object):
 
         # reward standardization
         if self.cfg.STD_REWARDS and len(rewards) > 1:
-            rewards = torch.Tensor(rewards)
-            if self.cfg.USE_GPU:
-                with torch.cuda.device(self.gpu_id):
-                    rewards = rewards.cuda()
+            rewards = torch.Tensor(rewards).to(self.device)
 
             rewards = (rewards - rewards.mean()) / (rewards.std() + np.finfo(np.float32).eps.item())
 
         if self.cfg.USE_GAE:
-            gae = torch.zeros(1, 1)
-            if self.cfg.USE_GPU:
-                with torch.cuda.device(self.gpu_id):
-                    gae = gae.cuda()
+            gae = torch.zeros(1, 1).to(self.device)
 
         for i in reversed(range(len(rewards))):
             R = self.cfg.GAMMA * R + rewards[i]
@@ -276,7 +252,7 @@ class A3C_TrainWorker(object):
                 gae = advantage
 
             policy_loss = policy_loss - \
-                            (log_probs[i].sum() * Variable(gae)) - \
+                            (log_probs[i].sum() * gae) - \
                           (self.cfg.ENTROPY_BETA * entropies[i].sum())
 
         self.logger.log_value('policy_loss', self.step, policy_loss.item(), print_value=False, to_file=False)

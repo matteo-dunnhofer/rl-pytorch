@@ -41,12 +41,8 @@ def weight_init(m):
         m.weight.data.uniform_(-w_bound, w_bound)
         m.bias.data.fill_(0)
 
-def normal(x, mu, sigma, gpu_id, use_gpu):
-    pi = torch.FloatTensor([math.pi])
-
-    if use_gpu:
-        with torch.cuda.device(gpu_id):
-            pi = pi.cuda()
+def normal(x, mu, sigma, device):
+    pi = torch.FloatTensor([math.pi]).to(device)
 
     a = (-1 * (x - mu).pow(2) / (2 * sigma)).exp()
     b = 1 / (2 * sigma * pi.expand_as(sigma)).sqrt()
