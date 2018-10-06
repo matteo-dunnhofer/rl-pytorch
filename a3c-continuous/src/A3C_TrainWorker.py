@@ -221,6 +221,7 @@ class A3C_TrainWorker(object):
 
             R = value.data
 
+        R = Variable(R)
         values.append(R)
 
         # computing loss

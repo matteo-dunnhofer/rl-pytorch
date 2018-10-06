@@ -122,7 +122,7 @@ class ActorCriticLSTM(torch.nn.Module):
 
         #x = h_state
 
-        state = (state[0].data.to(device), state[1].data.to(device))
+        state = (Variable(state[0].data.to(device)), Variable(state[1].data.to(device)))
 
         x, n_state = self.lstm(x.unsqueeze(0), state)
         x = x.squeeze(0)
