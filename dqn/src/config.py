@@ -27,21 +27,21 @@ class Configuration(object):
 
     SEED = 123
     HUBER_LOSS = False  # choose touse Huber or MSE loss
-    LEARNING_RATE = 1e-3 #0.00025 #1e-5
-    BATCH_SIZE = 32
+    LEARNING_RATE = 0.00025 #1e-5
+    BATCH_SIZE = 64
     DECAY_LR = False
     DECAY_LR_STEPS = [500]
     OPTIM = 'adam'
     MOMENTUM = 0.95
-    MAX_EPISODES = 100000
+    MAX_EPISODES = 730
     GAMMA = 0.999
     
     EPS_START = 0.9
     EPS_END = 0.1
-    EPS_DECAY = 100000 #1000000 #5e5
+    EPS_DECAY = 20000 #1000000 #5e5
     TARGET_UPDATE = 1000
     EXPERIENCE_REPLAY_SIZE = 10000
-    TRAIN_START = 1000
+    TRAIN_START = 0
     ATARI_STATE_STACK_N = 4
     DOUBLE_DQN = False
 

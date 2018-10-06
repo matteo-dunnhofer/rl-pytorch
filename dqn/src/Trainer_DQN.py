@@ -31,6 +31,7 @@ class Trainer(object):
     def __init__(self, cfg, ckpt_path=None):
         self.cfg = cfg
 
+        random.seed(self.cfg.SEED)
         torch.manual_seed(self.cfg.SEED)
         torch.cuda.manual_seed(self.cfg.SEED)
 
