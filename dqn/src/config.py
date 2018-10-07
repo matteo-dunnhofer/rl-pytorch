@@ -28,22 +28,23 @@ class Configuration(object):
     SEED = 123
     HUBER_LOSS = False  # choose touse Huber or MSE loss
     LEARNING_RATE = 0.00025 #1e-5
-    BATCH_SIZE = 64
+    BATCH_SIZE = 32
     DECAY_LR = False
     DECAY_LR_STEPS = [500]
     OPTIM = 'adam'
     MOMENTUM = 0.95
-    MAX_EPISODES = 730
+    MAX_EPISODES = 1000000
     GAMMA = 0.999
+    STD_REWARDS = False
     
     EPS_START = 0.9
     EPS_END = 0.1
-    EPS_DECAY = 20000 #1000000 #5e5
-    TARGET_UPDATE = 1000
-    EXPERIENCE_REPLAY_SIZE = 10000
-    TRAIN_START = 0
+    EPS_DECAY = 1000000 #5e5
+    TARGET_UPDATE = 10000
+    EXPERIENCE_REPLAY_SIZE = 100000
+    TRAIN_START = 50000
     ATARI_STATE_STACK_N = 4
-    DOUBLE_DQN = True
+    DOUBLE_DQN = False
 
     NUM_ACTIONS = 2
     
@@ -69,6 +70,7 @@ class Configuration(object):
         cfg2str += "OPTIM = " + str(self.OPTIM) + '\n'
         cfg2str += "MOMENTUM = " + str(self.MOMENTUM) + '\n'
         cfg2str += "MAX_EPISODES = " + str(self.MAX_EPISODES) + '\n'
+        cfg2str += "STD_REWARDS = " + str(self.STD_REWARDS) + '\n'
         cfg2str += "NUM_ACTIONS = " + str(self.NUM_ACTIONS) + '\n'
         cfg2str += "GAMMA = " + str(self.GAMMA) + '\n'
         cfg2str += "EPS_START = " + str(self.EPS_START) + '\n'

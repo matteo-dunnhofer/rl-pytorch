@@ -8,16 +8,6 @@ import numpy as np
 import torch
 from torch.autograd import Variable
 
-def ensure_shared_grads(local_model, global_model, use_gpu=False):
-    for local_param, global_param in zip(filter(lambda p: p.requires_grad, local_model.parameters()),
-                                        filter(lambda p: p.requires_grad, global_model.parameters())):
-        if global_param.grad is not None and not use_gpu:
-            return
-        elif not use_gpu:
-            global_param._grad = local_param.grad
-        else:
-            global_param._grad = local_param.grad.cpu()
-
 def normalized_columns_initializer(weights, std=1.0):
     x = torch.randn(weights.size())
     x *= std / torch.sqrt((x**2).sum(1, keepdim=True))

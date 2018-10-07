@@ -63,9 +63,6 @@ class Trainer(object):
 
         self.ckpt_path = os.path.join(self.experiment_path, 'ckpt', self.target_model.model_name + '.weights')
 
-        self.criterion = torch.nn.MSELoss()
-
-        
         if self.cfg.OPTIM == 'adam':
             self.optimizer = optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()),
                                         lr=self.cfg.LEARNING_RATE)
@@ -156,6 +153,10 @@ class Trainer(object):
                     state_batch = torch.cat(batch.state).to(self.device)
                     action_batch = torch.cat(batch.action).to(self.device)
                     reward_batch = torch.cat(batch.reward).to(self.device)
+
+                    # reward standardization
+                    if self.cfg.STD_REWARDS:
+                        reward_batch = (reward_batch - reward_batch.mean()) / (reward_batch.std() + np.finfo(np.float32).eps.item())
                     
                     state_action_values = self.model(state_batch).gather(1, action_batch)
                     next_state_values = torch.zeros(self.cfg.BATCH_SIZE, device=self.device)
