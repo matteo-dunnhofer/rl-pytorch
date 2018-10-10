@@ -1,11 +1,11 @@
-# Deep Q-Learning (DQN) implementation for continuous action RL tasks
+# Deep Deterministic Policy Gradients (DDPG) implementation for continuous action RL tasks
 
-Based on the paper Asynchronous Methods for Deep Reinforcement Learning [(link)](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf) by Minh et al. It is possible use also Double DQN [(link)](https://arxiv.org/abs/1509.06461) to get better results and in shorter times.
+Based on the paper Asynchronous Methods for Deep Reinforcement Learning [(link)](https://arxiv.org/abs/1509.02971) by Lillicrap et al.
 
-Uses the OpenAI gym's environment `CartPole-v0` and the Atari games.. 
+Uses the OpenAI gym's environment `LunarLander-v2` and the Mujoco environments. 
 
-Model implementations include a MLP and a CNN + FC.
+Model implementations include a MLPs for the Actor and the Critic.
 
 Use python 3. Can run also on a GPU.
 
-Inspired by https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html .
+Inspired by https://github.com/ikostrikov/pytorch-ddpg-naf .
