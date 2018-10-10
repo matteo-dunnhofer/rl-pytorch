@@ -75,6 +75,7 @@ class AtariEnv(AbstractEnvironment):
 			self.crop = self.default		
 
 		self.env = gym.make(self.env_name)
+		self.env.seed(self.cfg.SEED)
 
 		self.done = False
 		self.total_reward = 0

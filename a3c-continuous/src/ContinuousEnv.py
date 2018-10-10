@@ -18,6 +18,7 @@ class LunarLanderEnv(AbstractEnvironment):
 		self.cfg = cfg
 
 		self.env = gym.make('LunarLanderContinuous-v2')
+		self.env.seed(self.cfg.SEED)
 
 		self.done = False
 		self.total_reward = 0
@@ -53,6 +54,7 @@ class BipedalWalkerEnv(AbstractEnvironment):
 		self.cfg = cfg
 
 		self.env = gym.make('BipedalWalker-v2')
+		self.env.seed(self.cfg.SEED)
 
 		self.done = False
 		self.total_reward = 0
@@ -88,6 +90,7 @@ class MountainCarEnv(AbstractEnvironment):
 		self.cfg = cfg
 
 		self.env = gym.make('MountainCarContinuous-v0')
+		self.env.seed(self.cfg.SEED)
 
 		self.done = False
 		self.total_reward = 0
@@ -123,6 +126,7 @@ class CartPoleEnv(AbstractEnvironment):
 		self.cfg = cfg
 
 		self.env = gym.make('CartPole-v1')
+		self.env.seed(self.cfg.SEED)
 
 		self.done = False
 		self.total_reward = 0
