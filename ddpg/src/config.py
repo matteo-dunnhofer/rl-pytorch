@@ -25,35 +25,37 @@ class Configuration(object):
     # training hyperparameters
     OBSERVATION_SIZE = [80, 80]
 
-    SEED = 123
+    SEED = 4 #123
     ACTOR_LEARNING_RATE = 1e-4
     CRITIC_LEARNING_RATE = 1e-3
-    BATCH_SIZE = 32
+    CRITIC_WEIGHT_DECAY = 1e-2
+    BATCH_SIZE = 128
     DECAY_LR = False
     DECAY_LR_STEPS = [500]
     OPTIM = 'adam'
     MOMENTUM = 0.95
     MAX_EPISODES = 1000000
+    UPDATE_STEPS = 5
     GAMMA = 0.99
     
-    EXPL_NOISE_SCALE_INIT = 0.8
+    EXPL_NOISE_SCALE_INIT = 0.3
     EXPL_NOISE_SCALE_END = 0.3
-    EXPL_EP_END = 2000 # number of episodes to end exploration
+    EXPL_EP_END = 100 # number of episodes to end exploration
     OU_EXPL_MU = 0.0
     OU_EXPL_THETA = 0.15
     OU_EXPL_SIGMA = 0.2
-    TAU = 1e-4
-    EXPERIENCE_REPLAY_SIZE = 10000
-    STD_REWARDS = True
+    TAU = 1e-3
+    EXPERIENCE_REPLAY_SIZE = 1000000
+    STD_REWARDS = False
 
-    NUM_ACTIONS = 2
+    NUM_ACTIONS = 6
     
     USE_GPU = True
     GPU_IDS = [0] #[0, 1, 2]
 
     RENDER = False
     DISPLAY_STEP = 100
-    SAVE_STEP = 100
+    SAVE_STEP = 1
 
     def __init__(self):
         super(Configuration, self).__init__()

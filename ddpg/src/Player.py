@@ -14,9 +14,8 @@ from torch.autograd import Variable
 import gym
 import utils as ut
 from config import Configuration
-from DQN import DQN, DQNMLP
-from AtariEnv import AtariEnv
-from CartPoleEnv import CartPoleEnv
+from ACModel import ActorMLP, CriticMLP
+from MujocoEnv import HalfCheetahEnv
 
 class Player(object):
 
@@ -25,7 +24,7 @@ class Player(object):
         self.cfg = cfg
         
         #self.env = AtariEnv(self.cfg)
-        self.env = CartPoleEnv(self.cfg)
+        self.env = HalfCheetahEnv(self.cfg)
 
         if self.cfg.USE_GPU:
             self.gpu_id = 0
@@ -33,7 +32,7 @@ class Player(object):
         else:
             self.device = torch.device('cpu')
 
-        self.model = DQNMLP(self.cfg).to(self.device)
+        self.model = ActorMLP(self.cfg).to(self.device)
         self.model.eval()
 
         self.model.load_state_dict(torch.load(ckpt_path))
@@ -54,12 +53,12 @@ class Player(object):
             
             time.sleep(0.05)
         
-            q_values = self.model(state)
-            _, action = q_values.max(1)
-            action = action.view(1, 1).cpu()
+            mu = self.model(Variable(state))
 
-            _ = self.env.step(action.item())
-            
+            action = mu.data.cpu().numpy()
+
+            _ = self.env.step(action)
+        
         print ('Final score: {:.01f}'.format(self.env.total_reward))
         print ('Steps: {:.01f}'.format(self.env.steps))
 

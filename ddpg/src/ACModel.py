@@ -23,26 +23,29 @@ class ActorMLP(torch.nn.Module):
         self.training = training
 
         # network layers
-        self.hidden1 = nn.Linear(8, 128)
-        self.bn1 = nn.BatchNorm1d(128)
-        self.hidden2 = nn.Linear(128, 256)
-        self.bn2 = nn.BatchNorm1d(256)
+        self.hidden1 = nn.Linear(17, 128)
+        self.ln1 = nn.LayerNorm(128)
+        self.hidden2 = nn.Linear(128, 128)
+        self.ln2 = nn.LayerNorm(128)
 
         # actor
-        self.actor = nn.Linear(256, self.cfg.NUM_ACTIONS)
+        self.actor = nn.Linear(128, self.cfg.NUM_ACTIONS)
 
         # weight initialisation
         #self.apply(ut.weight_init)
         
-        #self.actor.weight.data = ut.normalized_columns_initializer(self.actor_mu.weight.data, 0.01)
+        #self.actor.weight.data = ut.normalized_columns_initializer(self.actor.weight.data, 0.01)
         #self.actor.bias.data.fill_(0)
+        self.actor.weight.data.mul_(0.1)
+        self.actor.bias.data.mul_(0.1)
+
 
     def forward(self, x):
         """ 
         Function that executes the model 
         """
-        x = F.relu(self.bn1(self.hidden1(x)))
-        x = F.relu(self.bn2(self.hidden2(x)))
+        x = F.relu(self.ln1(self.hidden1(x)))
+        x = F.relu(self.ln2(self.hidden2(x)))
 
         return torch.clamp(self.actor(x), -1.0, 1.0)
 
@@ -57,29 +60,30 @@ class CriticMLP(torch.nn.Module):
         self.training = training
 
         # network layers
-        self.hidden1 = nn.Linear(8, 128)
-        self.bn1 = nn.BatchNorm1d(128)
-        self.hidden2 = nn.Linear(128 + self.cfg.NUM_ACTIONS, 256)
-        self.bn2 = nn.BatchNorm1d(256)
-
+        self.hidden1 = nn.Linear(17, 128)
+        self.ln1 = nn.LayerNorm(128)
+        self.hidden2 = nn.Linear(128 + self.cfg.NUM_ACTIONS, 128)
+        self.ln2 = nn.LayerNorm(128)
         # critic
-        self.critic = nn.Linear(256, 1)
+        self.critic = nn.Linear(128, 1)
 
         # weight initialisation
         #self.apply(ut.weight_init)
 
         #self.critic.weight.data = ut.normalized_columns_initializer(self.critic.weight.data, 1.0)
         #self.critic.bias.data.fill_(0)
+        self.critic.weight.data.mul_(0.1)
+        self.critic.bias.data.mul_(0.1)
 
     def forward(self, states, actions):
         """ 
         Function that executes the model 
         """
-        x = F.relu(self.bn1(self.hidden1(states)))
+        x = F.relu(self.ln1(self.hidden1(states)))
 
         x = torch.cat((x, actions), 1)
 
-        x = F.relu(self.bn2(self.hidden2(x)))
+        x = F.relu(self.ln2(self.hidden2(x)))
 
         return self.critic(x)
 
