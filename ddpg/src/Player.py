@@ -15,7 +15,8 @@ import gym
 import utils as ut
 from config import Configuration
 from ACModel import ActorMLP, CriticMLP
-from MujocoEnv import HalfCheetahEnv
+from ContinuousEnv import LunarLanderEnv
+from MujocoEnv import HalfCheetahEnv, HumanoidEnv
 
 class Player(object):
 
@@ -23,8 +24,9 @@ class Player(object):
 
         self.cfg = cfg
         
-        #self.env = AtariEnv(self.cfg)
+        #self.env = LunarLanderEnv(self.cfg)
         self.env = HalfCheetahEnv(self.cfg)
+        #self.env = HumanoidEnv(self.cfg)
 
         if self.cfg.USE_GPU:
             self.gpu_id = 0
@@ -51,11 +53,11 @@ class Player(object):
 
             self.env.render()
             
-            time.sleep(0.05)
+            time.sleep(0.025)
         
             mu = self.model(Variable(state))
 
-            action = mu.data.cpu().numpy()
+            action = mu.data.cpu().numpy()[0]
 
             _ = self.env.step(action)
         
@@ -84,13 +86,13 @@ class Player(object):
 
                 self.env.render()
                 
-                time.sleep(0.05)
+                time.sleep(0.025)
             
-                q_values = self.model(state)
-                _, action = q_values.max(1)
-                action = action.view(1, 1).cpu()
+                mu = self.model(Variable(state))
 
-                _ = self.env.step(action.item())
+                action = mu.data.cpu().numpy()[0]
+
+                _ = self.env.step(action)
             
                 
             print ('Game {:04d} - Final score: {:.01f}'.format(game, self.env.total_reward))
