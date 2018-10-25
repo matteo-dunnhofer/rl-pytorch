@@ -32,7 +32,8 @@ class A3C_TrainWorker(object):
         self.experiment_path = os.path.join(experiment_path, self.worker_name)
         self.make_folders()
 
-        self.env = LunarLanderEnv(self.cfg)
+        #self.env = LunarLanderEnv(self.cfg)
+        self.env = BipedalWalkerEnv(self.cfg)
         #self.env = CartPoleEnv(self.cfg)
 
         torch.manual_seed(self.cfg.SEED + ident)

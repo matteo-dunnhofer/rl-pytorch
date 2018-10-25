@@ -23,7 +23,7 @@ class ActorCriticMLP(torch.nn.Module):
         self.training = training
 
         # network layers
-        self.hidden1 = nn.Linear(8, 128)
+        self.hidden1 = nn.Linear(96, 128)
         self.hidden2 = nn.Linear(128, 256)
         #self.hidden3 = nn.Linear(256, 256)
 
@@ -50,6 +50,9 @@ class ActorCriticMLP(torch.nn.Module):
         """ 
         Function that executes the model 
         """
+        if self.cfg.STATE_STACK_N > 0:
+            x = x.view(1, -1)
+
         x = F.relu(self.hidden1(x))
         x = F.relu(self.hidden2(x))
         #x = F.relu(self.hidden3(x))

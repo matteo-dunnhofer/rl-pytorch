@@ -45,7 +45,8 @@ class Configuration(object):
     
     ROLLOUT_STEPS = 20
     NUM_WORKERS = 8
-    NUM_ACTIONS = 2
+    NUM_ACTIONS = 6
+    STATE_STACK_N = 4
     
     USE_GPU = True
     GPU_IDS = [0] #[0, 1, 2]
@@ -69,6 +70,7 @@ class Configuration(object):
         cfg2str += "MOMENTUM = " + str(self.MOMENTUM) + '\n'
         cfg2str += "MAX_EPISODES = " + str(self.MAX_EPISODES) + '\n'
         cfg2str += "NUM_ACTIONS = " + str(self.NUM_ACTIONS) + '\n'
+        cfg2str += "STATE_STACK_N = " + str(self.STATE_STACK_N) + '\n'
         cfg2str += "GAMMA = " + str(self.GAMMA) + '\n'
         cfg2str += "USE_GAE = " + str(self.USE_GAE) + '\n'
         cfg2str += "TAU = " + str(self.TAU) + '\n'
