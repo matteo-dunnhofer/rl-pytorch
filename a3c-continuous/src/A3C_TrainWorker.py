@@ -54,8 +54,8 @@ class A3C_TrainWorker(object):
 
         self.global_model = global_model
         
-        self.local_model = ActorCriticMLP(self.cfg, training=True).to(self.device)
-        #self.local_model = ActorCriticLSTM(self.cfg, training=True, gpu_id=self.gpu_id)
+        #self.local_model = ActorCriticMLP(self.cfg, training=True).to(self.device)
+        self.local_model = ActorCriticLSTM(self.cfg, training=True).to(self.device)
         self.local_model.train()
 
         self.ckpt_path = os.path.join(experiment_path, 'ckpt', self.global_model.model_name + '.weights')
@@ -64,7 +64,7 @@ class A3C_TrainWorker(object):
         self.logger.log_pytorch_model(self.global_model, print_log=False)
 
         params = list(list(self.global_model.hidden1.parameters()) + \
-                            list(self.global_model.hidden2.parameters()) + \
+                            #list(self.global_model.hidden2.parameters()) + \
                             list(self.global_model.actor_mu.parameters()) + \
                             list(self.global_model.actor_mu.parameters()) )
 
@@ -76,9 +76,9 @@ class A3C_TrainWorker(object):
         
         #if optimizer is None:
         if self.cfg.OPTIM == 'adam':
-            #self.optimizer = optim.Adam(filter(lambda p: p.requires_grad, self.global_model.parameters()),
-            #                            lr=self.cfg.LEARNING_RATE)
-            self.optimizer = optim.Adam(parameters, lr=self.cfg.LEARNING_RATE)
+            self.optimizer = optim.Adam(filter(lambda p: p.requires_grad, self.global_model.parameters()),
+                                        lr=self.cfg.LEARNING_RATE)
+            #self.optimizer = optim.Adam(parameters, lr=self.cfg.LEARNING_RATE)
         elif self.cfg.OPTIM == 'rms-prop':
             self.optimizer = optim.RMSprop(filter(lambda p: p.requires_grad, self.global_model.parameters()),
                                         lr=self.cfg.LEARNING_RATE)
@@ -122,7 +122,7 @@ class A3C_TrainWorker(object):
             # update the global model weights
             self.local_model.zero_grad()
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(filter(lambda p: p.requires_grad, self.local_model.parameters()), 40.0)
+            #torch.nn.utils.clip_grad_norm_(filter(lambda p: p.requires_grad, self.local_model.parameters()), 40.0)
             ut.ensure_shared_grads(self.local_model, self.global_model, use_gpu=self.cfg.USE_GPU)
             self.optimizer.step()
             
@@ -189,9 +189,11 @@ class A3C_TrainWorker(object):
             
             reward = self.env.step(action.cpu().numpy()[0])
 
-            # reward clipping
-            r = max(min(float(reward), 1.0), -1.0)
-            #r = reward
+            if self.cfg.CLIP_REWARDS:
+                # reward clipping
+                r = max(min(float(reward), 1.0), -1.0)
+            else:
+                r = reward
 
             log_probs.append(action_log_prob)
             rewards.append(r)
@@ -229,10 +231,10 @@ class A3C_TrainWorker(object):
         policy_loss = 0.0
         value_loss = 0.0
 
+        rewards = torch.Tensor(rewards).to(self.device)
+
         # reward standardization
         if self.cfg.STD_REWARDS and len(rewards) > 1:
-            rewards = torch.Tensor(rewards).to(self.device)
-
             rewards = (rewards - rewards.mean()) / (rewards.std() + np.finfo(np.float32).eps.item())
 
         if self.cfg.USE_GAE:

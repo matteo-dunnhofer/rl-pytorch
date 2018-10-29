@@ -175,9 +175,11 @@ class A3C_TrainWorker(object):
             
             reward = self.env.step(action.cpu().numpy()[0,0])
 
-            # reward clipping
-            r = max(min(float(reward), 1.0), -1.0)
-            #r = reward
+            if self.cfg.CLIP_REWARDS:
+                # reward clipping
+                r = max(min(float(reward), 1.0), -1.0)
+            else:
+                r = reward
 
             log_probs.append(action_log_prob)
             rewards.append(r)
@@ -215,10 +217,10 @@ class A3C_TrainWorker(object):
         policy_loss = 0.0
         value_loss = 0.0
 
+        rewards = torch.Tensor(rewards).to(self.device)
+
         # reward standardization
         if self.cfg.STD_REWARDS and len(rewards) > 1:
-            rewards = torch.Tensor(rewards).to(self.device)
-
             rewards = (rewards - rewards.mean()) / (rewards.std() + np.finfo(np.float32).eps.item())
 
         if self.cfg.USE_GAE:

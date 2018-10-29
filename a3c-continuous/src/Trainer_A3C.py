@@ -38,8 +38,8 @@ class Trainer(object):
 
 		self.main_logger = Logger(self.experiment_path, to_file=False)
 
-		self.global_model = ActorCriticMLP(self.cfg, training=True)
-		#self.global_model = ActorCriticLSTM(self.cfg, training=True)
+		#self.global_model = ActorCriticMLP(self.cfg, training=True)
+		self.global_model = ActorCriticLSTM(self.cfg, training=True)
 		self.global_model.share_memory()
 
 		self.optimizer = None #optim.Adam(self.global_model.parameters(), lr=self.cfg.LEARNING_RATE)

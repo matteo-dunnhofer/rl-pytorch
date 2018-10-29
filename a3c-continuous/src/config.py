@@ -27,17 +27,18 @@ class Configuration(object):
     OBSERVATION_SIZE = [128, 128]
 
     SEED = 123
-    LEARNING_RATE = 1e-4
+    LEARNING_RATE = 1e-5
     CRITIC_LR = 1e-3
-    DECAY_LR = True
-    DECAY_LR_STEPS = [500]
+    DECAY_LR = False
+    DECAY_LR_STEPS = [400]
     OPTIM = 'adam'
     MOMENTUM = 0.95
-    MAX_EPISODES = 2000
+    MAX_EPISODES = 10000
     GAMMA = 0.99
     STD_REWARDS = False
+    CLIP_REWARDS = True
     
-    USE_GAE = False # use Generalized Advantage Estimation
+    USE_GAE = True # use Generalized Advantage Estimation
     TAU = 1.0
 
     ENTROPY_BETA = 1e-2
@@ -46,7 +47,7 @@ class Configuration(object):
     ROLLOUT_STEPS = 20
     NUM_WORKERS = 8
     NUM_ACTIONS = 6
-    STATE_STACK_N = 4
+    STATE_STACK_N = 0
     
     USE_GPU = True
     GPU_IDS = [0] #[0, 1, 2]
@@ -78,6 +79,7 @@ class Configuration(object):
         cfg2str += "ENTROPY_BETA = " + str(self.ENTROPY_BETA) + '\n'
         cfg2str += "VALUE_LOSS_MULT = " + str(self.VALUE_LOSS_MULT) + '\n'
         cfg2str += "STD_REWARDS = " + str(self.STD_REWARDS) + '\n'
+        cfg2str += "CLIP_REWARDS = " + str(self.CLIP_REWARDS) + '\n'
         cfg2str += "NUM_WORKERS = " + str(self.NUM_WORKERS) + '\n'
         cfg2str += "DISPLAY_STEP = " + str(self.DISPLAY_STEP) + '\n'
         cfg2str += "SAVE_STEP = " + str(self.SAVE_STEP) + '\n'

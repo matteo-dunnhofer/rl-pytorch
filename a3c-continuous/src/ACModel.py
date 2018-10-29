@@ -80,7 +80,7 @@ class ActorCriticLSTM(torch.nn.Module):
         self.lstm_size = 128
 
         # network layers
-        self.hidden1 = nn.Linear(8, 128)
+        self.hidden1 = nn.Linear(24, 128)
         #self.hidden3 = nn.Linear(256, 256)
 
         #self.lstm = nn.LSTMCell(256, 256)

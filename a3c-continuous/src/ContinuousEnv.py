@@ -53,29 +53,40 @@ class BipedalWalkerEnv(AbstractEnvironment):
 	def __init__(self, cfg):
 		self.cfg = cfg
 
-		self.env = gym.make('BipedalWalkerHardcore-v2')
+		#self.env = gym.make('BipedalWalkerHardcore-v2')
+		self.env = gym.make('BipedalWalker-v2')
 		self.env.seed(self.cfg.SEED)
 
 		self.done = False
 		self.total_reward = 0
 		self.steps = 0
 		state = self.env.reset()
-		self.stack_state = StackState(self.cfg, state)
-		self.state = self.stack_state.get()
+		if self.cfg.STATE_STACK_N > 0:
+			self.stack_state = StackState(self.cfg, state)
+			self.state = self.stack_state.get()
+		else:
+			self.state = state
 
 	def reset(self):
 		self.done = False
 		self.total_reward = 0
 		self.steps = 0
 		state = self.env.reset()
-		self.stack_state = StackState(self.cfg, state)
-		self.state = self.stack_state.get()
+		if self.cfg.STATE_STACK_N > 0:
+			self.stack_state = StackState(self.cfg, state)
+			self.state = self.stack_state.get()
+		else:
+			self.state = state
 
 	def step(self, action):
 		observe, reward, done, _ = self.env.step(action)
-		self.stack_state.add(observe)
 
-		self.state = self.stack_state.get()
+		if self.cfg.STATE_STACK_N > 0:
+			self.stack_state.add(observe)
+			self.state = self.stack_state.get()
+		else:
+			self.state = observe
+
 		self.done = done
 		self.total_reward += reward
 		self.steps += 1

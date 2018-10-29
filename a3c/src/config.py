@@ -36,6 +36,7 @@ class Configuration(object):
     MAX_EPISODES = 20000
     GAMMA = 0.99
     STD_REWARDS = False
+    CLIP_REWARDS = False
     
     USE_GAE = True # use Generalized Advantage Estimation
     TAU = 1.0
@@ -76,6 +77,7 @@ class Configuration(object):
         cfg2str += "ENTROPY_BETA = " + str(self.ENTROPY_BETA) + '\n'
         cfg2str += "VALUE_LOSS_MULT = " + str(self.VALUE_LOSS_MULT) + '\n'
         cfg2str += "STD_REWARDS = " + str(self.STD_REWARDS) + '\n'
+        cfg2str += "CLIP_REWARDS = " + str(self.CLIP_REWARDS) + '\n'
         cfg2str += "NUM_WORKERS = " + str(self.NUM_WORKERS) + '\n'
         cfg2str += "DISPLAY_STEP = " + str(self.DISPLAY_STEP) + '\n'
         cfg2str += "SAVE_STEP = " + str(self.SAVE_STEP) + '\n'
