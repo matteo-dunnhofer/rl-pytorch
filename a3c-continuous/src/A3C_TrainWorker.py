@@ -231,7 +231,13 @@ class A3C_TrainWorker(object):
         policy_loss = 0.0
         value_loss = 0.0
 
-        rewards = torch.Tensor(rewards).to(self.device)
+
+        rewards_ = []
+        for i in reversed(range(len(rewards))):
+            R = self.cfg.GAMMA * R + rewards[i]
+            rewards_.append(R)
+
+        rewards = torch.Tensor(rewards_).to(self.device)
 
         # reward standardization
         if self.cfg.STD_REWARDS and len(rewards) > 1:
@@ -241,8 +247,9 @@ class A3C_TrainWorker(object):
             gae = torch.zeros(1, 1).to(self.device)
 
         for i in reversed(range(len(rewards))):
-            R = self.cfg.GAMMA * R + rewards[i]
-            advantage = R - values[i]
+            #R = self.cfg.GAMMA * R + rewards[i]
+            #advantage = R - values[i]
+            advantage = rewards[i] - values[i]
 
             value_loss = value_loss + 0.5 * advantage.pow(2)
 
