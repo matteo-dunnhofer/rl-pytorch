@@ -9,8 +9,7 @@ import torch
 from torch.autograd import Variable
 
 def ensure_shared_grads(local_model, global_model, use_gpu=False):
-    for local_param, global_param in zip(filter(lambda p: p.requires_grad, local_model.parameters()),
-                                        filter(lambda p: p.requires_grad, global_model.parameters())):
+    for local_param, global_param in zip(local_model.parameters(), global_model.parameters()):
         if global_param.grad is not None and not use_gpu:
             return
         elif not use_gpu:
@@ -42,7 +41,7 @@ def weight_init(m):
         m.bias.data.fill_(0)
 
 def normal(x, mu, sigma, device):
-    pi = torch.FloatTensor([math.pi]).to(device)
+    pi = Variable(torch.FloatTensor([math.pi]).to(device))
 
     a = (-1 * (x - mu).pow(2) / (2 * sigma)).exp()
     b = 1 / (2 * sigma * pi.expand_as(sigma)).sqrt()

@@ -32,8 +32,8 @@ class A3C_TrainWorker(object):
         self.experiment_path = os.path.join(experiment_path, self.worker_name)
         self.make_folders()
 
-        #self.env = LunarLanderEnv(self.cfg)
-        self.env = BipedalWalkerEnv(self.cfg)
+        self.env = LunarLanderEnv(self.cfg)
+        #self.env = BipedalWalkerEnv(self.cfg)
         #self.env = CartPoleEnv(self.cfg)
 
         torch.manual_seed(self.cfg.SEED + ident)
@@ -76,7 +76,7 @@ class A3C_TrainWorker(object):
         
         #if optimizer is None:
         if self.cfg.OPTIM == 'adam':
-            self.optimizer = optim.Adam(filter(lambda p: p.requires_grad, self.global_model.parameters()),
+            self.optimizer = optim.Adam(self.global_model.parameters(),
                                         lr=self.cfg.LEARNING_RATE)
             #self.optimizer = optim.Adam(parameters, lr=self.cfg.LEARNING_RATE)
         elif self.cfg.OPTIM == 'rms-prop':
@@ -159,14 +159,14 @@ class A3C_TrainWorker(object):
 
             state = self.env.get_state()
 
-            state = state.to(self.device)
+            state = Variable(state.to(self.device))
 
             policy_mu, policy_sigma, value, n_model_state = self.local_model(state.unsqueeze(0), self.model_state, self.device)
 
             #mu = F.softsign(policy_mu)
             mu = torch.clamp(policy_mu, -1.0, 1.0)
             #mu = F.tanh(policy_mu)
-            sigma = F.softplus(policy_sigma + np.finfo(np.float32).eps.item(), beta=1.0) 
+            sigma = F.softplus(policy_sigma, beta=1.0) + np.finfo(np.float32).eps.item()
             
             """
             # Does not work good # https://discuss.pytorch.org/t/backpropagation-through-sampling-a-normal-distribution/3164
@@ -177,11 +177,12 @@ class A3C_TrainWorker(object):
 
             action = torch.clamp(action, -1.0, 1.0)
             """
-            noise = torch.randn(mu.size()).to(self.device)
-            pi = torch.FloatTensor([math.pi]).to(self.device)
+            noise = Variable(torch.randn(mu.size()).to(self.device))
+            pi = Variable(torch.FloatTensor([math.pi]).to(self.device))
 
             action = (mu + sigma.sqrt() * noise).data
-            action_prob = ut.normal(action, mu, sigma, self.device)
+            act = Variable(action)
+            action_prob = ut.normal(act, mu, sigma, self.device)
             action_log_prob = (action_prob + 1e-6).log()
             entropy = 0.5 * ((sigma * 2 * pi.expand_as(sigma)).log() + 1)
 
@@ -218,7 +219,7 @@ class A3C_TrainWorker(object):
         else:
             state = self.env.get_state()
 
-            state = state.to(self.device)
+            state = Variable(state.to(self.device))
 
             _, _, value, _ = self.local_model(state.unsqueeze(0), self.model_state, self.device)
 
@@ -232,24 +233,24 @@ class A3C_TrainWorker(object):
         value_loss = 0.0
 
 
-        rewards_ = []
-        for i in reversed(range(len(rewards))):
-            R = self.cfg.GAMMA * R + rewards[i]
-            rewards_.append(R)
+        #rewards_ = []
+        #for i in reversed(range(len(rewards))):
+        #    R = self.cfg.GAMMA * R + rewards[i]
+        #    rewards_.append(R)
 
-        rewards = torch.Tensor(rewards_).to(self.device)
+        #rewards = torch.Tensor(rewards_).to(self.device)
 
         # reward standardization
-        if self.cfg.STD_REWARDS and len(rewards) > 1:
-            rewards = (rewards - rewards.mean()) / (rewards.std() + np.finfo(np.float32).eps.item())
+        #if self.cfg.STD_REWARDS and len(rewards) > 1:
+        #    rewards = (rewards - rewards.mean()) / (rewards.std() + np.finfo(np.float32).eps.item())
 
         if self.cfg.USE_GAE:
             gae = torch.zeros(1, 1).to(self.device)
 
         for i in reversed(range(len(rewards))):
-            #R = self.cfg.GAMMA * R + rewards[i]
-            #advantage = R - values[i]
-            advantage = rewards[i] - values[i]
+            R = self.cfg.GAMMA * R + rewards[i]
+            advantage = R - values[i]
+            #advantage = rewards[i] - values[i]
 
             value_loss = value_loss + 0.5 * advantage.pow(2)
 
@@ -260,10 +261,10 @@ class A3C_TrainWorker(object):
                 gae = gae * self.cfg.GAMMA * self.cfg.TAU + delta
 
             else:
-                gae = advantage
+                gae = R - values[i].data #advantage
 
             policy_loss = policy_loss - \
-                            (log_probs[i].sum() * gae) - \
+                            (log_probs[i].sum() * Variable(gae)) - \
                           (self.cfg.ENTROPY_BETA * entropies[i].sum())
 
         self.logger.log_value('policy_loss', self.step, policy_loss.item(), print_value=False, to_file=False)

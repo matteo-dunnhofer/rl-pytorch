@@ -26,14 +26,15 @@ class Player(object):
         self.env = LunarLanderEnv(self.cfg)
         #self.env = MountainCarEnv(self.cfg)
 
-        self.model = ActorCriticMLP(self.cfg)
-        #self.model = ActorCriticLSTM(self.cfg)
-        self.model.eval()
-
         if self.cfg.USE_GPU:
             self.gpu_id = self.cfg.GPU_IDS[0]
-            with torch.cuda.device(self.gpu_id):
-                self.model.cuda()
+            self.device = torch.device('cuda', self.gpu_id)
+        else:
+            self.device = torch.device('cpu')
+
+        #self.model = ActorCriticMLP(self.cfg)
+        self.model = ActorCriticLSTM(self.cfg).to(self.device)
+        self.model.eval()
 
         self.model.load_state_dict(torch.load(ckpt_path))
         
@@ -43,22 +44,20 @@ class Player(object):
 
         step = 0
 
-        model_state = copy.deepcopy(self.model.init_state())
+        model_state = copy.deepcopy(self.model.init_state(self.device))
 
         while not self.env.done:
             step += 1
 
             state = self.env.get_state()
 
-            if self.cfg.USE_GPU:
-                with torch.cuda.device(self.gpu_id):
-                    state = state.cuda()
+            state = state.to(self.device)
 
             self.env.render()
             
             #time.sleep(0.1)
-        
-            policy_mu, _, _, model_state = self.model(Variable(state.unsqueeze(0)), model_state)
+            with torch.no_grad():
+                policy_mu, _, _, model_state = self.model(Variable(state.unsqueeze(0)), model_state, self.device)
 
             #mu = F.softsign(policy_mu)
             mu = torch.clamp(policy_mu, -1.0, 1.0)
@@ -84,21 +83,19 @@ class Player(object):
 
             self.env.reset()
 
-            model_state = copy.deepcopy(self.model.init_state())
+            model_state = copy.deepcopy(self.model.init_state(self.device))
 
             while not self.env.done:
                 step += 1
 
                 state = self.env.get_state()
 
-                if self.cfg.USE_GPU:
-                    with torch.cuda.device(self.gpu_id):
-                        state = state.cuda()
+                state = state.to(self.device)
 
                 #if self.cfg.RENDER:
                 self.env.render()
             
-                policy_mu, _, _, model_state = self.model(Variable(state.unsqueeze(0)), model_state)
+                policy_mu, _, _, model_state = self.model(Variable(state.unsqueeze(0)), model_state, self.device)
 
                 #mu = F.softsign(policy_mu)
                 mu = torch.clamp(policy_mu, -1.0, 1.0)
